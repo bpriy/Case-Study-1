@@ -1,0 +1,274 @@
+library(rnoaa)
+library(tidyverse)
+
+stations <- ghcnd_stations()
+
+# RNOAA GHCND Data README File: https://www1.ncdc.noaa.gov/pub/data/ghcn/daily/readme.txt
+# dc_stationid = USC00186350
+# Available variables: tmax, tmin, prcp, snow, snwd, tobs, dapr, mdpr, wt04, wt05, wt01, wt03, wt11, dasf, mdsf, wt06, wesd 
+# liestal_stationid = GME00127786
+# Available variables: tmax, tmin, prcp, snwd
+# kyoto_stationid = JA000047759
+# Available variables: tavg, tmax, tmin, prcp, snwd
+# vancouver_stationid = CA001108395
+# Available variables: tmax, tmin, prcp, tavg, snwd, snow, wdfg, wsfg 
+
+dc1 <- ghcnd_search(stationid = "USC00186350", var=c("tmax")) 
+dc1
+dc2 <- ghcnd_search(stationid = "USC00186350", var=c("tmin")) 
+dc3 <- ghcnd_search(stationid = "USC00186350", var=c("prcp")) 
+
+li1 <- ghcnd_search(stationid = "GME00127786", var=c("tmax")) 
+li2 <- ghcnd_search(stationid = "GME00127786", var=c("tmin"))
+li3 <- ghcnd_search(stationid = "GME00127786", var=c("prcp"))
+
+ky1 <- ghcnd_search(stationid = "JA000047759", var=c("tmax")) 
+ky2 <- ghcnd_search(stationid = "JA000047759", var=c("tmin"))
+ky3 <- ghcnd_search(stationid = "JA000047759", var=c("prcp"))
+
+va1 <- ghcnd_search(stationid = "CA001108395", var=c("tmax")) 
+va2 <- ghcnd_search(stationid = "CA001108395", var=c("tmin")) 
+va3 <- ghcnd_search(stationid = "CA001108395", var=c("prcp"))
+
+####################################################
+
+# TMAX = Maximum temperature (tenths of degrees C)
+# TMIN = Minimum temperature (tenths of degrees C)
+# PRCP = Precipitation (tenths of mm)
+
+####################################################
+# overall summaries on the three variables (tmax, tmin, prcp) by location
+# for dc
+summary(dc1$tmax)
+summary(dc2$tmin)
+summary(dc3$prcp)
+
+# for liestal
+summary(li1$tmax)
+summary(li2$tmin)
+summary(li3$prcp)
+
+# for kyoto
+summary(ky1$tmax)
+summary(ky2$tmin)
+summary(ky3$prcp)
+
+# for vancouver
+summary(va1$tmax)
+summary(va2$tmin)
+summary(va3$prcp)
+
+# overall summary boxplot on distribution of values for the three variables (tmax, tmin, prcp)
+#for tmax
+tx_list <- list(dc1$tmax, li1$tmax, ky1$tmax, va1$tmax)
+tmax <- tx_list %>% 
+  reduce(full_join, by='date') %>% 
+  subset(select = c(date, tmax.x, tmax.y, tmax.x.x, tmax.y.y)) %>% 
+  rename(dc = tmax.x, liestal = tmax.y, kyoto = tmax.x.x, vancouver = tmax.y.y) %>% 
+  gather(Location, tmax, c('dc','liestal', 'kyoto', 'vancouver'))
+tmax
+ggplot(tmax, aes(x = Location, y = tmax, fill = Location)) + geom_boxplot() + 
+  labs(y = 'Maximum Temperature (tenths of degrees C)')
+#for tmin
+tn_list <- list(dc2$tmin, li2$tmin, ky2$tmin, va2$tmin)
+tmin <- tn_list %>% 
+  reduce(full_join, by='date') %>% 
+  subset(select = c(date, tmin.x, tmin.y, tmin.x.x, tmin.y.y)) %>% 
+  rename(dc = tmin.x, liestal = tmin.y, kyoto = tmin.x.x, vancouver = tmin.y.y) %>% 
+  gather(Location, tmin, c('dc','liestal', 'kyoto', 'vancouver'))
+tmin
+ggplot(tmin, aes(x = Location, y = tmin, fill = Location)) + geom_boxplot() + 
+  labs(y = 'Minimum Temperature (tenths of degrees C)')
+#for prcp
+pr_list <- list(dc3$prcp, li3$prcp, ky3$prcp, va3$prcp)
+prcp <- pr_list %>% 
+  reduce(full_join, by='date') %>% 
+  subset(select = c(date, prcp.x, prcp.y, prcp.x.x, prcp.y.y)) %>% 
+  rename(dc = prcp.x, liestal = prcp.y, kyoto = prcp.x.x, vancouver = prcp.y.y) %>% 
+  gather(Location, prcp, c('dc','liestal', 'kyoto', 'vancouver'))
+prcp
+ggplot(prcp, aes(x = Location, y = prcp, fill = Location)) + geom_boxplot() + 
+  labs(y = 'Minimum Temperature (tenths of degrees C)')
+
+# individual plots on distribution of values for the three variables (tmax, tmin, prcp)
+# for dc
+plot(sort(dc1$tmax$tmax),ylab="Sorted tmax")
+ggplot(dc1$tmax,aes(x=tmax))+geom_histogram()
+ggplot(dc1$tmax,aes(x=tmax))+geom_density()
+
+plot(sort(dc2$tmin$tmin),ylab="Sorted tmin")
+ggplot(dc2$tmin,aes(x=tmin))+geom_histogram()
+ggplot(dc2$tmin,aes(x=tmin))+geom_density()
+
+plot(sort(dc3$prcp$prcp),ylab="Sorted prcp")
+ggplot(dc3$prcp,aes(x=prcp))+geom_histogram()
+ggplot(dc3$prcp,aes(x=prcp))+geom_density()
+
+# for liestal
+plot(sort(li1$tmax$tmax),ylab="Sorted tmax")
+ggplot(li1$tmax,aes(x=tmax))+geom_histogram()
+ggplot(li1$tmax,aes(x=tmax))+geom_density()
+
+plot(sort(li2$tmin$tmin),ylab="Sorted tmin")
+ggplot(li2$tmin,aes(x=tmin))+geom_histogram()
+ggplot(li2$tmin,aes(x=tmin))+geom_density()
+
+plot(sort(li3$prcp$prcp),ylab="Sorted prcp")
+ggplot(li3$prcp,aes(x=prcp))+geom_histogram()
+ggplot(li3$prcp,aes(x=prcp))+geom_density()
+
+# for kyoto
+plot(sort(ky1$tmax$tmax),ylab="Sorted tmax")
+ggplot(ky1$tmax,aes(x=tmax))+geom_histogram()
+ggplot(ky1$tmax,aes(x=tmax))+geom_density()
+
+plot(sort(ky2$tmin$tmin),ylab="Sorted tmin")
+ggplot(ky2$tmin,aes(x=tmin))+geom_histogram()
+ggplot(ky2$tmin,aes(x=tmin))+geom_density()
+
+plot(sort(ky3$prcp$prcp),ylab="Sorted prcp")
+ggplot(ky3$prcp,aes(x=prcp))+geom_histogram()
+ggplot(ky3$prcp,aes(x=prcp))+geom_density()
+
+# for vancouver
+plot(sort(va1$tmax$tmax),ylab="Sorted tmax")
+ggplot(va1$tmax,aes(x=tmax))+geom_histogram()
+ggplot(va1$tmax,aes(x=tmax))+geom_density()
+
+plot(sort(va2$tmin$tmin),ylab="Sorted tmin")
+ggplot(va2$tmin,aes(x=tmin))+geom_histogram()
+ggplot(va2$tmin,aes(x=tmin))+geom_density()
+
+plot(sort(va3$prcp$prcp),ylab="Sorted prcp")
+ggplot(va3$prcp,aes(x=prcp))+geom_histogram()
+ggplot(va3$prcp,aes(x=prcp))+geom_density()
+
+###############################################
+# avg of variable values over time
+# for tmax
+tmax %>%
+  mutate(year = as.integer(format(date, "%Y")),
+         month = as.integer(strftime(date, '%m')) %% 12, # make December "0"
+         season = cut(month, breaks = c(0, 2, 5, 8, 11),
+                      include.lowest = TRUE,
+                      labels = c("Winter", "Spring", "Summer", "Fall")),
+         year = if_else(month == 0, year + 1L, year)) %>%
+  group_by(Location, year) %>%
+  summarize(tmax_avg = mean(tmax, na.rm = TRUE)) %>%
+  ggplot(aes(x=year, y=tmax_avg, group=Location, color=Location)) +
+  geom_line()
+
+# for tmin
+tmin %>%
+  mutate(year = as.integer(format(date, "%Y")),
+         month = as.integer(strftime(date, '%m')) %% 12, # make December "0"
+         season = cut(month, breaks = c(0, 2, 5, 8, 11),
+                      include.lowest = TRUE,
+                      labels = c("Winter", "Spring", "Summer", "Fall")),
+         year = if_else(month == 0, year + 1L, year)) %>%
+  group_by(Location, year) %>%
+  summarize(tmin_avg = mean(tmin, na.rm = TRUE)) %>%
+  ggplot(aes(x=year, y=tmin_avg, group=Location, color=Location)) +
+  geom_line()
+
+# for prcp
+prcp %>%
+  mutate(year = as.integer(format(date, "%Y")),
+         month = as.integer(strftime(date, '%m')) %% 12, # make December "0"
+         season = cut(month, breaks = c(0, 2, 5, 8, 11),
+                      include.lowest = TRUE,
+                      labels = c("Winter", "Spring", "Summer", "Fall")),
+         year = if_else(month == 0, year + 1L, year)) %>%
+  group_by(Location, year) %>%
+  summarize(prcp_avg = mean(prcp, na.rm = TRUE)) %>%
+  ggplot(aes(x=year, y=prcp_avg, group=Location, color=Location)) +
+  geom_line()
+
+###########################################
+# continuation of demo analysis
+# for tmax
+get_temperature <- function (stationid) {
+  ghcnd_search(stationid = stationid, var = c("tmax"), 
+               date_min = "1950-01-01", date_max = "2022-01-31")[[1]] %>%
+    mutate(year = as.integer(format(date, "%Y")),
+           month = as.integer(strftime(date, '%m')) %% 12, # make December "0"
+           season = cut(month, breaks = c(0, 2, 5, 8, 11),
+                        include.lowest = TRUE,
+                        labels = c("Winter", "Spring", "Summer", "Fall")),
+           year = if_else(month == 0, year + 1L, year)) %>%
+    group_by(year, season) %>%
+    summarize(tmax_avg = mean(tmax, na.rm = TRUE))
+}
+
+historic_temperatures <-
+  tibble(location = "washingtondc", get_temperature("USC00186350")) %>%
+  bind_rows(tibble(location = "liestal", get_temperature("GME00127786"))) %>%
+  bind_rows(tibble(location = "kyoto", get_temperature("JA000047759"))) %>%
+  bind_rows(tibble(location = "vancouver", get_temperature("CA001108395")))
+
+historic_temperatures %>%
+  ggplot() + 
+  aes(year, tmax_avg) + 
+  geom_line() +
+  xlim(1950, 2031) +
+  labs(x = "Year", y = "Average maximum temperature (1/10 °C)") +
+  facet_grid(factor(season) ~ str_to_title(location))
+
+#for tmin
+get_temperature <- function (stationid) {
+  ghcnd_search(stationid = stationid, var = c("tmin"), 
+               date_min = "1950-01-01", date_max = "2022-01-31")[[1]] %>%
+    mutate(year = as.integer(format(date, "%Y")),
+           month = as.integer(strftime(date, '%m')) %% 12, # make December "0"
+           season = cut(month, breaks = c(0, 2, 5, 8, 11),
+                        include.lowest = TRUE,
+                        labels = c("Winter", "Spring", "Summer", "Fall")),
+           year = if_else(month == 0, year + 1L, year)) %>%
+    group_by(year, season) %>%
+    summarize(tmin_avg = mean(tmin, na.rm = TRUE))
+}
+
+historic_temperatures <-
+  tibble(location = "washingtondc", get_temperature("USC00186350")) %>%
+  bind_rows(tibble(location = "liestal", get_temperature("GME00127786"))) %>%
+  bind_rows(tibble(location = "kyoto", get_temperature("JA000047759"))) %>%
+  bind_rows(tibble(location = "vancouver", get_temperature("CA001108395")))
+
+historic_temperatures %>%
+  ggplot() + 
+  aes(year, tmin_avg) + 
+  geom_line() +
+  xlim(1950, 2031) +
+  labs(x = "Year", y = "Average minimum temperature (1/10 °C)") +
+  facet_grid(factor(season) ~ str_to_title(location))
+
+# for prcp
+get_precipitation <- function (stationid) {
+  ghcnd_search(stationid = stationid, var = c("prcp"), 
+               date_min = "1950-01-01", date_max = "2022-01-31")[[1]] %>%
+    mutate(year = as.integer(format(date, "%Y")),
+           month = as.integer(strftime(date, '%m')) %% 12, # make December "0"
+           season = cut(month, breaks = c(0, 2, 5, 8, 11),
+                        include.lowest = TRUE,
+                        labels = c("Winter", "Spring", "Summer", "Fall")),
+           year = if_else(month == 0, year + 1L, year)) %>%
+    group_by(year, season) %>%
+    summarize(prcp_avg = mean(prcp, na.rm = TRUE))
+}
+
+historic_precipitation <-
+  tibble(location = "washingtondc", get_precipitation("USC00186350")) %>%
+  bind_rows(tibble(location = "liestal", get_precipitation("GME00127786"))) %>%
+  bind_rows(tibble(location = "kyoto", get_precipitation("JA000047759"))) %>%
+  bind_rows(tibble(location = "vancouver", get_precipitation("CA001108395")))
+
+historic_precipitation %>%
+  ggplot() + 
+  aes(year, prcp_avg) + 
+  geom_line() +
+  xlim(1950, 2031) +
+  labs(x = "Year", y = "Average precipitation (1/10 mm)") +
+  facet_grid(factor(season) ~ str_to_title(location))
+
+############################################
+

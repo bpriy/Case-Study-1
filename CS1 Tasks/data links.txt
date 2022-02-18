@@ -1,0 +1,32 @@
+DC - 
+https://www.ncdc.noaa.gov/cdo-web/datasets/LCD/stations/WBAN:13743/detail
+https://www1.ncdc.noaa.gov/pub/data/cdo/documentation/LCD_documentation.pdf
+https://www.ncdc.noaa.gov/cdo-web/quickdata
+
+KYOTO - 
+https://www.data.jma.go.jp/obd/stats/data/en/smp/index.html
+http://www.data.jma.go.jp/obd/stats/etrn/view/monthly_s3_en.php?block_no=47759&view=3
+kyoto wmo station id: 47759
+
+LIESTAL - 
+https://www.meteoswiss.admin.ch/home/measurement-and-forecasting-systems/land-based-stations/data-availability.html
+
+VANCOUVER - 
+https://www2.gov.bc.ca/gov/content/environment/air-land-water/air/air-quality/current-air-quality-data/bc-air-data-archive
+https://envistaweb.env.gov.bc.ca/DynamicTable2.aspx?G_ID=331
+Vancouver International Airport #2
+
+GENERAL - 
+https://www.ncdc.noaa.gov/cdo-web/results
+https://data.giss.nasa.gov/gistemp/station_data_v4_globe/v4.temperature.inv.txt
+
+SOIL - 
+https://dcgis.maps.arcgis.com/apps/instant/minimalist/index.html?
+appid=b915693dbad84839ac3ea5f4a3c1aa9b
+https://www.fs.fed.us/foresthealth/applied-sciences/mapping-reporting/soil-drainage.shtml
+Lindside Loam Soil Type, USDA Map Unit Key 128625
+
+STAGES - 
+https://www.vcbf.ca/six-stages-of-cherry-blossom-development-from-buds-to-flowers-infographics
+https://www.sakurainhighpark.com/trackers-stages
+https://highparknaturecentre.com/2/cherry-blossom-bloom-tracking
