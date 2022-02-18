@@ -30,3 +30,7 @@ STAGES -
 https://www.vcbf.ca/six-stages-of-cherry-blossom-development-from-buds-to-flowers-infographics
 https://www.sakurainhighpark.com/trackers-stages
 https://highparknaturecentre.com/2/cherry-blossom-bloom-tracking
+
+AQI - 
+https://www.weather.gov/safety/airquality-aqindex
+https://www.airnow.gov/aqi/aqi-basics/#:~:text=Air%20Quality%20Index%20(AQI)%20AQI,Professionals%20Air%20Quality%20Awareness%20Week
