@@ -37,6 +37,7 @@ clipr::write_clip(kyoto_ts)
 kdat_list = split(kyoto_ts, kyoto_ts$year)
 
 x = 1
+z = 1
 totyears = 1951:2022
 y = length(totyears)
 
@@ -72,19 +73,24 @@ nky[,"cm_ca"] <- cumsum(nky$Ca)
 heat <- min(which(CR + nky$cm_ca  >= 0))  # number of heat days
 totdays <- chill + heat
 
-ppd[i] = totdays
-year[i] = kdat_list[[i]][1,5]
+ppd[z] = totdays
+year[z] = kdat_list[[i]][1,5]
 
 predpbd <- data.frame(year,ppd)
 kyoto_chpb <- left_join(predpbd, publicpbd, by ="year") %>% 
   rowwise() %>% mutate(diff2 = (bloom_doy-ppd)^2)
-RMSD[x] <- sqrt(sum(kyoto_chpb$diff2)/(y))
+z = z + 1
+print(i)
+print(TC)
+print(CR)
 }
+  }
+  }
+
+
+RMSD[x] <- sqrt(sum(kyoto_chpb$diff2)/(y))
 Tc[x] = TC
 Cr[x] = CR
 x = x+1
-  }}
-
-
 yi <- min(which(RMSD))
 year[yi]
