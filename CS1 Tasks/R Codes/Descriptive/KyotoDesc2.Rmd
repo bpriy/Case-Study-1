@@ -1,0 +1,54 @@
+---
+title: "Desc2"
+output: html_document
+---
+KYOTO - 
+For these plots, all the values were used and inputted as is (the symbols were removed in the data).
+```{r}
+library(tidyverse)
+library(dplyr)
+
+kyoto <- read.csv("KyotoDesc.csv")
+
+## Temperature (TMIN, TMAX, TAVG - DEGREES CELCIUS)
+plot(kyoto$year, kyoto$mtavg, col="red", xlim = c(1879, 2022), ylim = c(0,30), type='l') 
+lines(kyoto$year, kyoto$mtmin, col="green")
+lines(kyoto$year, kyoto$mtmax, col="blue")
+```
+
+```{r}
+## Mean Windspeed (m/s)
+plot(kyoto$year, kyoto$mean.wspd, col="blue")
+```
+
+```{r}
+## Mean Sea level air pressure and station level pressure (hPa)
+plot(kyoto$year, kyoto$mean.sea.level.air.pressure, col="blue", xlim = c(1880, 2022), ylim = c(1007,1020),type='l')
+lines(kyoto$year, kyoto$mean.station.level.pressure, col="green")
+```
+
+```{r}
+## Mean relative humidity (%)
+plot(kyoto$year, kyoto$mean.relative.humidity, col="blue")
+```
+
+```{r}
+## Mean cloud amount (1/10)
+plot(kyoto$year, kyoto$mean.cloud.amount, col="blue")
+```
+
+```{r}
+## Mean possible sunshine %
+plot(kyoto$year, kyoto$mean.percent.possible.sunshine, col="blue")
+```
+
+```{r}
+## Monthly total sunshine hours
+plot(kyoto$year, kyoto$monthly.total.sunshine.hours, col="blue")
+```
+
+```{r}
+## Monthly total precipitation (mm)
+plot(kyoto$year, kyoto$monthly.total.precipitation, col="blue")
+```
+
