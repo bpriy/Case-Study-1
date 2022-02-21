@@ -1,0 +1,23 @@
+---
+title: "VancDesc2"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(timetk)
+
+vancouver <- read.csv("VancData2.csv")
+
+summary(vancouver)
+```
+
+```{r}
+dc <- read.csv("DC_AQI.csv")
+dc$Date <- as.Date(dc$Date)
+summary(dc)
+
+plot(dc$Date, dc$Overall.AQI.Value)
+```
+

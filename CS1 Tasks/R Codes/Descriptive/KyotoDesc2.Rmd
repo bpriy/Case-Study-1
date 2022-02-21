@@ -51,4 +51,7 @@ plot(kyoto$year, kyoto$monthly.total.sunshine.hours, col="blue")
 ## Monthly total precipitation (mm)
 plot(kyoto$year, kyoto$monthly.total.precipitation, col="blue")
 ```
+```{r}
+summary(kyoto)
+```
 
