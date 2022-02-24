@@ -91,7 +91,7 @@ year = 0
                  tab[,"cm_ca"] <- cumsum(tab$Ca)
                  
                  totdays <- min(which(tab$cm_ca >= Rh)) # number of heat days
-                 if (!is.finite(heat)) {
+                 if (!is.finite(totdays)) {
                    ppd[i] = "NA"
                    year[i] = datal[[i]][1,5]
                    next
