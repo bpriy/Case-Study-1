@@ -118,5 +118,5 @@ year = 0
     legend(x="topright", inset = c(-0.37,0), legend=c("Predicted", "Observed"), 
            col=c("blue", "black"), pch=c(20), xpd=TRUE)
     
-    plot(restab$bloom_doy, (restab$ppd, xlab = "Public PBD", ylab = "Predicted PBD", main = "PBD from 1991 to 2010 (Predicted and Observed)"))
+    plot(restab$bloom_doy, restab$ppd, xlab = "Public PBD", ylab = "Predicted PBD", main = "PBD from 1991 to 2010 (Predicted and Observed)")
     lines(restab$bloom_doy, coef(fit)[1]+coef(fit)[2]*(restab$bloom_doy))
