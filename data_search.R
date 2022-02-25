@@ -1,5 +1,7 @@
 library(rnoaa)
 library(tidyverse)
+library(stringr)
+library(tools)
 
 # API Acess Token: fwcZDIbCZYPCqmEWEhDBVHyNRsWyvFQB
 
@@ -106,6 +108,31 @@ stations %>%
   print(n=Inf)
 
 
+# search nearest stations to cities in Japan with no station
+ja_cities <- c("SAKATA", "FUKUSHIMA", "TOYOOKA", "MAIZURU", "NAZE", "YONAGUNIJIMA", "IRIOMOTEJIMA", "ISHIGAKIJIMA", "MIYAKOJIMA", "MINAMIDAITOJIMA")
+add_ja_cities <- read.csv("data/japan.csv", header=TRUE)
+add_ja_cities$country <- str_split_fixed(add_ja_cities$location, "/", 2)[,1]
+add_ja_cities$city <- str_split_fixed(add_ja_cities$location, "/", 2)[,2]
+
+ncol(add_ja_cities)
+df_ja1 <- data.frame(c(0), c(0), c(0), c(0), c(0), c(0), c(0), c(0), c(0))
+df_ja <- data.frame(c(0), c(0), c(0), c(0), c(0), c(0), c(0), c(0), c(0))
+for(q in 1:length(ja_cities)){
+  df_ja1 <- add_ja_cities[add_ja_cities$city==str_to_title(ja_cities)[q], ]
+  df_ja[q,] <- subset(df_ja1, subset = !duplicated(df_ja1["city"]))
+}
+
+ls_ja <- list(NULL)
+ja_5 <- list(NULL)
+for(r in 1:length(ja_cities)){
+  ls_ja[[r]] <- data.frame(id=str_to_title(ja_cities)[r], latitude=round(df_ja[r,2], 4), longitude=round(df_ja[r,3], 4))
+  df <- unlist(ls_ja[[r]])
+  df <- data.frame(id=df[1], latitude=df[2], longitude=df[3])
+  ja_5[[r]] <- meteo_nearby_stations(lat_lon_df=df, limit=1)
+}
+
+# closest station for each city in Japan that did not have a station
+ja_5
 
 
 ##############################################
