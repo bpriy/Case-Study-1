@@ -30,9 +30,20 @@ dc_hourly$HourlyDryBulbTemperature <- as.numeric(dc_hourly$HourlyDryBulbTemperat
 
 hr.dt.seq1 <- data.frame(DATE = seq(as.POSIXct("1936-09-01 00:00:00"), 
                                     as.POSIXct("2004-12-31 23:00:00"), by="hour"))
-hr.dt.seq2 <- data.frame(DATE = seq(as.POSIXct("2005-01-01 00:00:00"), 
-                                    as.POSIXct("2022-02-20 23:00:00"), by="hour"))
-dc_hourly1 <- merge(dc_hourly, hr.dt.seq1, by="DATE", all=TRUE)
+hr.dt.seq2 <- data.frame(DATE = seq(as.POSIXct("2005-01-01 00:51:00"), 
+                                    as.POSIXct("2005-12-31 23:51:00"), by="hour"))
+hr.dt.seq3 <- data.frame(DATE = seq(as.POSIXct("2006-01-01 00:52:00"), 
+                                    as.POSIXct("2022-02-20 23:52:00"), by="hour"))
+ob1 <- dc_hourly %>% filter(DATE <= "2004-12-31 23:00:00")
+ob2 <- dc_hourly %>% filter(DATE <= "2005-12-31 23:00:00" & DATE >= "2005-01-01 00:51:00")
+ob3 <- dc_hourly %>% filter(DATE >= "2006-01-01 00:52:00")
+
+dc_hourly1 <- merge(ob1, hr.dt.seq1, by="DATE", all=TRUE)
+dc_hourly2 <- merge(ob2, hr.dt.seq2, by="DATE", all=TRUE)
+dc_hourly3 <- merge(ob3, hr.dt.seq3, by="DATE", all=TRUE)
+
+dc_hourly <- rbind(dc_hourly1, dc_hourly2)
+dc_hourly <- rbind(dc_hourly, dc_hourly3)
 
 dc_hourly1[600:650,c(1,44)]
 
@@ -51,5 +62,5 @@ GDD.calc <- function(data, basetemp, y1, m1, d1, y2, m2, d2, n){
   gdd
 }
 
-sample_gdd_cal <- GDD.calc(dc_hourly1, 4, 1946, 11, 01, 1947, 04, 15, 3)
+sample_gdd_cal <- GDD.calc(dc_hourly, 4, 1946, 11, 01, 1947, 04, 15, 3)
 
