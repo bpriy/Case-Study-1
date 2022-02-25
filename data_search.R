@@ -98,6 +98,48 @@ bc_25_2 <- meteo_nearby_stations(lat_lon_df=df_bc, limit=25)
 print(as.tibble(bc_25_2), n=25)
 
 
+# Variables available for Liestal 5 nearest stations
+liestal_25_2 <- as.data.frame(liestal_25_2)
+vp <- list(NULL)
+for (f in 1:10) {
+  vp[[liestal_25_2[f,2]]] <- ghcnd_search(stationid = liestal_25_2[f,1])
+}
+np <- names(vp)
+names(vp$RHEINFELDEN)
+names(vp$`BASEL BINNINGEN`)
+names(vp$EIMELDINGEN)
+names(vp$`BALE MULHOUSE`)
+names(vp$`SCHOPFHEIM-EICHEN`)
+names(vp$`BASEL-MULHOUSE`)
+names(vp$`MALSBURG-MARZELL-FRIEDRICHSHEI`)
+  
+# Search for 10 nearest stations
+coor_sw <- c(7.730519, 47.4814)
+near2 <- nearest_stations_nooa(country = "SWITZERLAND", point = coor_sw, no_of_stations = 10)
+near3 <- nearest_stations_nooa(country = "GERMANY", point = coor_sw, no_of_stations = 5)
+
+# closest hourly in Switzerland (17.9 km)
+Ruenenberg <- meteo_noaa_hourly(station = "066450-99999", year = 1980:2022)
+# closest daily in Germany (54.3 km)
+feldberg <- meteo_ogimet(interval = "daily",   date = c("2018-05-01", "2018-07-01"), station = 10908)
+colnames(feldberg)
+
+liestal1 <- meteo_ogimet(interval = "daily",   date = c("2018-05-01", "2018-07-01"), station = 066000 )
+liestal2 <- meteo_ogimet(interval = "daily",   date = c("2010-05-01", "2010-07-01"), station = 066450 )
+liestal3 <- meteo_ogimet(interval = "daily",   date = c("2018-05-01", "2018-07-01"), station = 066010 )
+liestal4 <- meteo_ogimet(interval = "daily",   date = c("2018-05-01", "2018-07-01"), station = 066410 )
+liestal5 <- meteo_ogimet(interval = "daily",   date = c("2018-05-01", "2018-07-01"), station = 066430 )
+
+liestal6 <- meteo_ogimet(interval = "daily",   date = c("2018-05-01", "2018-07-01"), station = 109000 )
+
+
+vp2 <- list(NULL)
+for (f in 1:10) {
+  vp2[[near2[f,2]]] <- ghcnd_search(stationid = near2[1,1])
+}
+np2 <- 
+
+
 stations %>% 
   filter(id=="USW00013743" | id=="USW00093725" | id=="USW00013751") %>% 
   print(n=Inf)
@@ -119,6 +161,7 @@ df_ja1 <- data.frame(c(0), c(0), c(0), c(0), c(0), c(0), c(0), c(0), c(0))
 df_ja <- data.frame(c(0), c(0), c(0), c(0), c(0), c(0), c(0), c(0), c(0))
 for(q in 1:length(ja_cities)){
   df_ja1 <- add_ja_cities[add_ja_cities$city==str_to_title(ja_cities)[q], ]
+  # https://stackoverflow.com/questions/8145670/how-do-i-select-the-first-row-in-an-r-data-frame-that-meets-certain-criteria
   df_ja[q,] <- subset(df_ja1, subset = !duplicated(df_ja1["city"]))
 }
 
@@ -152,3 +195,7 @@ dc_daily <- ncdc(datasetid = "GHCND", stationid = "GHCND:USW00013743",
                  enddate = 2021-12-31)
 
 lcd(station="72405013743", year=2014)
+
+# Liestal, Switzerland
+
+
