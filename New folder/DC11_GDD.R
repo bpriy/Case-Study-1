@@ -17,7 +17,7 @@ temps <- temps %>% mutate(year = as.integer(format(date, "%Y")),
                           season = cut(month, breaks = c(0, 2, 5, 8, 11),
                                        include.lowest = TRUE,
                                        labels = c("Winter", "Spring", "Summer", "Fall")),
-                          year = if_else(month >= 10 | month == 0, year + 1L, year))
+                          year = if_else(month >= 11 | month == 0, year + 1L, year))
 
 # check on tmin and tmax missing values: (code reference - https://stackoverflow.com/questions/53195961/count-total-missing-values-by-group)
 nas1 <- temps %>%  group_by(year) %>% summarise_each(funs(sum(is.na(.))))
@@ -52,17 +52,17 @@ datal = split(data, data$year)
 totyears = 1945:2021
 y = length(totyears)
 
-# The Basic Two-Step Phenology Model (With October 1st As Dormancy Initiation Date and Parameters: TC = 5, RC = -140.1, Rh = 264)
+# The Basic Two-Step Phenology Model (With November 1st As Dormancy Initiation Date and Parameters)
 TC = 5 # threshold temperature below which chill days (Cd) accumulate
-Rc = -140.1 # chill requirement
-Rh = 264 # heat requirement
+Rc = -135.1 # chill requirement
+Rh = 264.6 # heat requirement
 ppd = 0 # predicted peak bloom date 
 year = 0 
 chill_days = 0
 heat_days = 0
 for (i in 1:y){ # for each year from 1945 to 2021
   #### Dormancy Period
-  # calculate daily "chill day" values starting from october 1st
+  # calculate daily "chill day" values starting from November 1st
   Cd <- with(datal[[i]], ifelse(0 <= TC & TC <= tmin & tmin <= tmax, 0, 
                                 ifelse(0 <= tmin & tmin <= TC & TC < tmax,((tavg - tmin)-((tmax - TC)/2)),
                                        ifelse(0 <= tmin & tmin <= tmax & tmax <= TC, (tavg - tmin),
@@ -71,7 +71,7 @@ for (i in 1:y){ # for each year from 1945 to 2021
   Cd <- with(datal[[i]], ifelse(Cd < 0, Cd, Cd*(-1))) # chill day value should be negative (if it is not zero)
   tab <- cbind(Cd,datal[[i]])
   tab[,"cm_cd"] <- cumsum(tab$Cd) # calculated "chill days accumulated so far" for each day
-  chill <- min(which(tab$cm_cd <= Rc))  # number of days until dormancy released = number of days to first reach at least the Rc value (since October 1st)
+  chill <- min(which(tab$cm_cd <= Rc))  # number of days until dormancy released = number of days to first reach at least the Rc value (since November 1st)
   if (!is.finite(chill)) { 
     ppd[i] = "NA"
     year[i] = datal[[i]][1,5]
@@ -96,7 +96,7 @@ for (i in 1:y){ # for each year from 1945 to 2021
   tab$Ca[1:chill] <- 0 # before dormancy released, no heat days accrued
   tab[,"cm_ca"] <- cumsum(tab$Ca) # calculated "chill days accumulated so far" for each day
   
-  totdays <- min(which(tab$cm_ca >= Rh)) # total number of days to reach peak bloom (since October 1st)
+  totdays <- min(which(tab$cm_ca >= Rh)) # total number of days to reach peak bloom (since November 1st)
   if (!is.finite(totdays)) {
     ppd[i] = "NA"
     year[i] = datal[[i]][1,5]
@@ -104,7 +104,7 @@ for (i in 1:y){ # for each year from 1945 to 2021
   }
   heat <- totdays - chill
   
-  ppd[i] = totdays - 92 # convert the totdays value to "day of year" (starting from January 1st) & store the "ppd" value obtained in each for-loop iteration (year)
+  ppd[i] = totdays - 62 # convert the totdays value to "day of year" (starting from January 1st) & store the "ppd" value obtained in each for-loop iteration (year)
   year[i] = datal[[i]][1,5] # helps keep track of the year that corresponds to each ppd value
   chill_days[i] <- chill
   heat_days[i] <- heat
@@ -115,9 +115,6 @@ predpbd <- subset(predpbd, ppd!="NA") # reference: https://www.datasciencemadesi
 predpbd$ppd <- as.numeric(predpbd$ppd) 
 restab <- left_join(predpbd, publicpbd, by ="year") # create a table with the year, predicted pbd, and public pbd
 rmse(restab$ppd, restab$bloom_doy) # calculate root mean square error between observed and predicted pbd
-
-dc_gddsummary <- data.frame(restab$year, restab$heat_days, restab$chill_days)
-write.csv(dc_gddsummary,"data\\dc_gddsummary.csv", row.names = FALSE)
 
 fit = lm(restab$ppd ~ restab$bloom_doy) 
 summary(fit)
