@@ -3,7 +3,7 @@ library(rnoaa)
 library(climate)
 library(dplyr)
 
-jap <- read.csv("data/japan1.csv") 
+jap <- read.csv("data/japan1.csv")    
 
 # [daily] "id" - data available 1: ghcnd (rnoaa package) [daily data]
 # [hourly or daily - covariates like those we collected manually from the japanese meterological agency]:
