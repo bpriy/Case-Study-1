@@ -3,8 +3,7 @@ library(rnoaa)
 library(climate)
 library(dplyr)
 
-# public data on pbd from 1921-2021
-jap <- read.csv("data/japan1.csv") 
+jap <- read.csv("data/japan1.csv")    
 
 # [daily] "id" - data available 1: ghcnd (rnoaa package) [daily data]
 # [hourly or daily - covariates like those we collected manually from the japanese meterological agency]:

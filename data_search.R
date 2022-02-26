@@ -15,6 +15,8 @@ library(tools)
 
 ghcnd_search(stationid = "JA000047759")
 
+(stations <- ghcnd_stations())
+
 stations %>%
   filter(id=="USW00013743" | id=="JA000047759" | id=="GME00127786" | id=="CA001108395") %>% 
   print(n=Inf)
