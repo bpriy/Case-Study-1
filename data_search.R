@@ -31,6 +31,8 @@ loc2 <- ncdc_stations(
   token = "fwcZDIbCZYPCqmEWEhDBVHyNRsWyvFQB")
 ncdc_datasets(stationid="GHCND:JA000047759", 
               token="fwcZDIbCZYPCqmEWEhDBVHyNRsWyvFQB")
+ghcnd_search(stationid = "JA000047759")
+
 # Liestal, Switzerland
 loc3 <- ncdc_stations(
   stationid = "GHCND:GME00127786",
@@ -80,8 +82,8 @@ print(as.tibble(dc_25_2), n=25)
 nn_25_kyoto <- nn2(cor_stations, cor_kyoto, k=25)
 kyoto_25 <- as.vector(nn_25_kyoto$nn.idx)
 View(stations2[kyoto_25, ])
-kyoto_25_2 <- meteo_nearby_stations(lat_lon_df=df_kyoto, limit=25)
-print(as.tibble(kyoto_25_2), n=25)
+kyoto_25_2 <- meteo_nearby_stations(lat_lon_df=df_kyoto, limit=10)
+print(as.tibble(kyoto_25_2), n=10)
 
 # Liestal, Switzerland
 nn_25_liestal <- nn2(cor_stations, cor_liestal, k=25)
@@ -131,13 +133,6 @@ liestal4 <- meteo_ogimet(interval = "daily",   date = c("2018-05-01", "2018-07-0
 liestal5 <- meteo_ogimet(interval = "daily",   date = c("2018-05-01", "2018-07-01"), station = 066430 )
 
 liestal6 <- meteo_ogimet(interval = "daily",   date = c("2018-05-01", "2018-07-01"), station = 109000 )
-
-
-vp2 <- list(NULL)
-for (f in 1:10) {
-  vp2[[near2[f,2]]] <- ghcnd_search(stationid = near2[1,1])
-}
-np2 <- 
 
 
 stations %>% 
