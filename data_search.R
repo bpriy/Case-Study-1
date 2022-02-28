@@ -124,9 +124,11 @@ near3 <- nearest_stations_nooa(country = "GERMANY", point = coor_sw, no_of_stati
 
 # closest hourly in Switzerland (17.9 km)
 Ruenenberg <- meteo_noaa_hourly(station = "066450-99999", year = 1980:2022)
+basel <- meteo_noaa_hourly(station = "066010-99999", year = 1990:2022)
 # closest daily in Germany (54.3 km)
-feldberg <- meteo_ogimet(interval = "daily",   date = c("2018-05-01", "2018-07-01"), station = 10908)
-colnames(feldberg)
+Feldberg <- meteo_ogimet(interval = "daily", date = c("1990-05-01", "1990-06-01"), station = 10908)
+colnames(Feldberg)
+colnames(Ruenenberg)
 
 liestal1 <- meteo_ogimet(interval = "daily",   date = c("2018-05-01", "2018-07-01"), station = 066000 )
 liestal2 <- meteo_ogimet(interval = "daily",   date = c("2010-05-01", "2010-07-01"), station = 066450 )
