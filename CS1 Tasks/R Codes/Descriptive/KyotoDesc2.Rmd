@@ -18,7 +18,7 @@ lines(kyoto$year, kyoto$mtmax, col="blue")
 
 ```{r}
 ## Mean Windspeed (m/s)
-plot(kyoto$year, kyoto$mean.wspd, col="blue")
+plot(kyoto$year, kyoto$mean.wspd, type='l')
 ```
 
 ```{r}
@@ -29,27 +29,27 @@ lines(kyoto$year, kyoto$mean.station.level.pressure, col="green")
 
 ```{r}
 ## Mean relative humidity (%)
-plot(kyoto$year, kyoto$mean.relative.humidity, col="blue")
+plot(kyoto$year, kyoto$mean.relative.humidity, type='l')
 ```
 
 ```{r}
 ## Mean cloud amount (1/10)
-plot(kyoto$year, kyoto$mean.cloud.amount, col="blue")
+plot(kyoto$year, kyoto$mean.cloud.amount, type='l')
 ```
 
 ```{r}
 ## Mean possible sunshine %
-plot(kyoto$year, kyoto$mean.percent.possible.sunshine, col="blue")
+plot(kyoto$year, kyoto$mean.percent.possible.sunshine, type='l')
 ```
 
 ```{r}
 ## Monthly total sunshine hours
-plot(kyoto$year, kyoto$monthly.total.sunshine.hours, col="blue")
+plot(kyoto$year, kyoto$monthly.total.sunshine.hours, type='l')
 ```
 
 ```{r}
 ## Monthly total precipitation (mm)
-plot(kyoto$year, kyoto$monthly.total.precipitation, col="blue")
+plot(kyoto$year, kyoto$monthly.total.precipitation, type='l')
 ```
 ```{r}
 summary(kyoto)
