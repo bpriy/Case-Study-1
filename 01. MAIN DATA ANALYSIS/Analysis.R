@@ -224,6 +224,24 @@ for(k in 1:122) {
 }
 cherry.sw$sun <- sunhr.sw
 
+# Visualizations of Number of Hours of Sunlight vs. Time
+library(ggplot2)
+library(dplyr)
+ggplot(cherry.dc, aes(x=year, y=sun)) + geom_line() + geom_point() +
+  xlab("Year") + ylab("Average Number of Sunlight Hours from January 1 to PBD") + 
+  theme_bw()
+# reference: https://felixfan.github.io/ggplot2-remove-grid-background-margin/
+
+ggplot(cherry.sw, aes(x=year, y=sun)) + geom_line() + geom_point() +
+  xlab("Year") + ylab("Average Number of Sunlight Hours from January 1 to PBD") + 
+  theme_bw()
+# reference: https://felixfan.github.io/ggplot2-remove-grid-background-margin/
+
+ggplot(cherry.ja, aes(x=year, y=sun)) + geom_line() + geom_point() +
+  xlab("Year") + ylab("Average Number of Sunlight Hours from January 1 to PBD") + 
+  theme_bw()
+# reference: https://felixfan.github.io/ggplot2-remove-grid-background-margin/
+
 
 # Sunlight hours: May-Sep
 # Kyoto
