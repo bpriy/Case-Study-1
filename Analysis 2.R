@@ -4,17 +4,31 @@
 # Washington, DC
 colnames(cherry.dc)
 
-# Stepwise Regression
 cherry.dc.sub <- cherry.dc[year >= 1956, 
                            c("sun", "sun.maysep", "WDSP", "SLP", "PRCP", "SNWD", "Tavg", "TempDiffAbs", 
                              "heat.days", "chill.days", "GDD", "bloom_doy")] %>% filter(complete.cases(.))
+plot(cherry.dc$SLP, type="l")
+numsim <- 10000
+slp.smp <- NULL
+set.seed(7)
+for (k in 1:numsim){
+  slp.smp[k] <- sample(cherry.dc[c(36:45,53:70), "SLP"], size=1)
+}
+plot(density(slp.smp))
+set.seed(7)
+v1 <- sample(slp.smp, size = 7)
+cherry.dc.sub$SLP[46:52] <- v1
+cherry.dc$SLP[46:52] <- v1
+
+
+# Stepwise Regression
 lm1 <- lm(bloom_doy ~ sun + sun.maysep + WDSP + SLP + PRCP + SNWD + Tavg + 
             TempDiffAbs + heat.days + chill.days + GDD,
           data=cherry.dc.sub, na.action = na.omit)
 step.lm1 <- step(lm1, direction = "backward")
 
 # Best subset selection
-cherry.dc.pred <- cherry.dc[year >= 1956, 
+cherry.dc.pred <- cherry.dc.sub[year >= 1956, 
                             c("sun", "sun.maysep", "WDSP", "SLP", "PRCP", "SNWD", "Tavg", "TempDiffAbs", 
                               "heat.days", "chill.days", "GDD", "bloom_doy")] %>% 
   filter(complete.cases(.))
@@ -27,15 +41,13 @@ bestlm$best
 summary(regsubsets(y = cherry.dc.y, x = cherry.dc.pred, nbest=1 ))
 
 
-
-cherry.dc.sub2 <- cherry.dc[year >= 1956,
-                            c("sun", "sun.maysep", "Tavg", "GDD", "bloom_doy")] %>% filter(complete.cases(.))
-
-lm.b1 <- lm(bloom_doy ~ sun + sun.maysep + Tavg + GDD, 
-            data = cherry.dc.sub2)
+# models
+lm.b1 <- lm(bloom_doy ~ sun + sun.maysep + TempDiffAbs, 
+            data = cherry.dc.sub)
 summary(lm.b1)
 
-lm.b2 <- lm(bloom_doy ~ sun + sun.maysep + Tavg, data=cherry.dc.sub2)
+lm.b2 <- lm(bloom_doy ~ sun + sun.maysep + SLP + TempDiffAbs, data=cherry.dc.sub)
+summary(lm.b2)
 AIC(lm.b2, lm.b1)
 
 # Diagnostics
@@ -53,58 +65,65 @@ plot(seq(1, length(PBD), by=1), Tavg, type="l")
 plot(seq(1, length(PBD), by=1), GDD, type="l")
 detach(cherry.dc)
 
-acf(resid(lm.b2))
+acf2(resid(lm.b2))
 pacf(resid(lm.b2))
 durbinWatsonTest(lm.b2)
 qqPlot(lm.b2)
 plot(lm.b2)
 
 
-t.lm1 <- lm(bloom_doy ~ sun + sun.maysep + Tavg + 
+t.lm1 <- lm(bloom_doy ~ sun + sun.maysep + SLP + TempDiffAbs + GDD +
                 I(sun^2) + I(sun^3) + I(sun.maysep^2) 
-              , data=cherry.dc.sub2)
-t.lm2 <- lm(bloom_doy ~ sun + sun.maysep + Tavg + 
-              I(sun^2) + I(sun.maysep^2) 
-            , data=cherry.dc.sub2)
-t.lm3 <- lm(bloom_doy ~ sun  + Tavg + sun.maysep + GDD + I(sun.maysep^2) + I(sun^2) + I(sun^3), data=cherry.dc.sub2)
+              , data=cherry.dc.sub)
+t.lm2 <- lm(bloom_doy ~ sun + sun.maysep + SLP + heat.days + 
+               I(sun.maysep^2) + I(sun^2) + I(sun^3)
+            , data=cherry.dc.sub)
+t.lm3 <- lm(bloom_doy ~ Tavg + SLP + sun + sun.maysep + I(sun.maysep^2) + I(sun^2) + I(sun^3), data=cherry.dc.sub)
 
 AIC(t.lm1, t.lm2, t.lm3)
-anova(t.lm1, t.lm2)
+anova(t.lm3, t.lm1)
 
 summary(t.lm3)
-plot(t.lm1)
+plot(t.lm3)
 
 vif(t.lm3)
-acf2(resid(t.lm1))
-pacf(resid(t.lm1))
-durbinWatsonTest(t.lm1)
+acf2(resid(t.lm3))
+pacf(resid(t.lm3))
+durbinWatsonTest(t.lm3)
 
 # set store variables as time series for model
 dc.bloom.ts <- ts(cherry.dc$bloom_doy[36:101])
 dc.x1 <- ts(cherry.dc$Tavg[36:101])
 dc.x2 <- ts(cherry.dc$sun[36:101])
 dc.x3 <- ts(cherry.dc$sun.maysep[36:101])
+dc.x4 <- ts(cherry.dc$SLP[36:101])
 time.dc <- time(dc.bloom.ts)
 
 # plot time vs. covariates
 scatterplot(time.dc, dc.x1)
 scatterplot(time.dc, dc.x2)
 scatterplot(time.dc, dc.x3)
+scatterplot(time.dc, dc.x4)
 scatterplot(time.dc, dc.x2^2)
 scatterplot(time.dc, dc.x2^3)
 scatterplot(time.dc, dc.x3^2)
 
 # multiple linear regression 
-tm.dc.lm1 <- lm(dc.bloom.ts ~ time.dc + dc.x1 + dc.x2 + I(dc.x2^2) + I(dc.x2^3) + dc.x3 + I(dc.x3^2))
+tm.dc.lm1 <- lm(dc.bloom.ts ~ time.dc + dc.x1 + dc.x2 + I(dc.x2^2) + I(dc.x2^3) + dc.x3 + I(dc.x3^2) + dc.x4)
 summary(tm.dc.lm1)
 
 # detrend data
 dc.x1.t <- resid(lm(dc.x1 ~ time.dc))
 dc.x2.t <- resid(lm(dc.x2 ~ time.dc))
 dc.x3.t <- resid(lm(dc.x3 ~ time.dc))
+dc.x4.t <- resid(lm(dc.x4 ~ time.dc))
+dc.x2.t2 <- resid(lm(I(dc.x2^2) ~ time.dc))
+dc.x2.t3 <- resid(lm(I(dc.x2^3) ~ time.dc))
+dc.x3.t2 <- resid(lm(I(dc.x3^2) ~ time.dc))
+
 
 # fit model with detrended data
-tm.dc.lm2 <- lm(dc.bloom.ts ~ dc.x1.t + dc.x2.t + dc.x3.t + I(dc.x2.t^2) + I(dc.x2.t^3) + I(dc.x3.t^2) + time.dc )
+tm.dc.lm2 <- lm(dc.bloom.ts ~ dc.x1.t + dc.x2.t + dc.x3.t + dc.x4.t + dc.x2.t2 + dc.x2.t3 + dc.x3.t2 + time.dc )
 summary(tm.dc.lm2)
 acf2(resid(tm.dc.lm2))
 acf2(resid(tm.dc.lm2)^2)
@@ -124,8 +143,11 @@ ar.dc$loglik
 AIC(tm.dc.lm2)
 
 dc.arima2 <- auto.arima(dc.bloom.ts, max.p=5, max.d=3, max.q=5, max.P=5, max.D=3, max.Q=5, seasonal=TRUE, method="CSS",
-           xreg=cbind(time.dc, dc.x1.t, dc.x2.t, dc.x3.t, (dc.x2.t^2), (dc.x2.t^3), (dc.x3.t^2)) )
-predict(dc.arima2, n.ahead = 10)
+           xreg=cbind(time.dc, dc.x1.t, dc.x2.t, dc.x3.t, dc.x4.t, dc.x2.t2, dc.x3.t2) )
+forecast(dc.arima2, xreg=cbind(time.dc, dc.x1.t, dc.x2.t, dc.x3.t, dc.x4.t, dc.x2.t2, dc.x3.t2) )
+
+acf2(resid(dc.arima2))
+scatterplot(cherry.dc$PBD, resid(dc.arima2))
 
 tm.dc.lm3 <- lm(dc.bloom.ts ~ dc.x1.t + dc.x2.t  + I(dc.x2.t^2) + time.dc )
 plot(tm.dc.lm3)
@@ -183,6 +205,7 @@ scatterplot(time.dc.f, dc.x1.fut)
 scatterplot(time.dc.f, dc.x2.fut)
 scatterplot(time.dc.f, dc.x2.fut^2)
 
+
 # multiple linear regression 
 #tm.dc.lm1 <- lm(dc.bloom.ts ~ time.dc + dc.x1 + dc.x2 + I(dc.x2^2) + I(dc.x2^3) + dc.x3 + I(dc.x3^2))
 #summary(tm.dc.lm1)
@@ -190,6 +213,10 @@ scatterplot(time.dc.f, dc.x2.fut^2)
 # detrend data
 dc.x1.futt <- resid(lm(dc.x1.fut ~ time.dc))
 dc.x2.futt <- resid(lm(dc.x2.fut ~ time.dc))
+dc.x3.futt <- resid(lm(dc.x3.fut ~ time.dc))
+dc.x4.futt <- resid(lm(dc.x4.fut ~ time.dc))
+dc.x2.t2futt <- resid(lm(I(dc.x2.fut^2) ~ time.dc))
+
 
 tm.dc.lm3 <- lm(dc.bloom.ts ~ dc.x1.t + dc.x2.t  + I(dc.x2.t^2) + time.dc )
 plot(tm.dc.lm3)
@@ -353,11 +380,36 @@ beta.dc
 cherry.ja.sub <- cherry.ja[year >= 1951, 
                            c("sun", "sun.maysep", "WDSP", "SLP", "PRCP", "Tavg", "TempDiffAbs", 
                              "heat.days", "chill.days", "GDD", "PBD")] %>% filter(complete.cases(.))
+
+plot(cherry.ja$SLP, type="l")
+plot(cherry.ja$WDSP, type="l")
+plot(cherry.ja$PRCP, type="l")
+
+numsim <- 10000
+slp.smp <- NULL
+prc.smp <- NULL
+set.seed(7)
+for (k in 1:numsim){
+  slp.smp[k] <- sample(cherry.ja[c(54:65,74:75,77:88,91:105,107:122), "SLP"], size=1)
+  prc.smp[k] <- sample(cherry.ja[c(52:90,100,105,107:122), "PRCP"], size=1)
+  
+}
+plot(density(slp.smp))
+plot(density(prc.smp))
+
+set.seed(7)
+v1 <- sample(slp.smp, size = 14)
+v2 <- sample(prc.smp, size = 14)
+cherry.ja$SLP[c(52:53,66:73,76,89:90,106)] <- v1
+cherry.ja$PRCP[c(91:99,101:104,106)] <- v2
+
+
+# Stepwise Regression
 lm2 <- lm(PBD ~ sun + sun.maysep + WDSP + SLP + PRCP + Tavg + 
             TempDiffAbs + heat.days + chill.days + GDD,
           data=cherry.ja.sub, na.action = na.omit)
-# Stepwise Regression
-step.lm2 <- step(lm2, direction = "both")
+
+step.lm2 <- step(lm2, direction = "backward")
 
 
 # Best subset selection
@@ -372,17 +424,15 @@ summary(regsubsets(y = cherry.ja.y, x = cherry.ja.pred, nbest=1 ))
 
 scatterplotMatrix(cherry.ja.sub)
 
-ja.lm1 <- lm(PBD ~ sun + I(sun^2) + sun.maysep + PRCP + heat.days + chill.days + TempDiffAbs, data=cherry.ja.sub)
+ja.lm1 <- lm(PBD ~ sun + sun.maysep + PRCP + chill.days + TempDiffAbs + SLP, data=cherry.ja.sub)
 
 summary(ja.lm1)
 vif(ja.lm1)
 AIC(ja.lm1)
 acf2(resid(ja.lm1))
+acf2(resid(ja.lm1)^2)
+durbinWatsonTest(ja.lm1)
 plot(ja.lm1)
-
-
-
-
 
 
 
