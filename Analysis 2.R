@@ -6,16 +6,16 @@ colnames(cherry.dc)
 
 # Stepwise Regression
 cherry.dc.sub <- cherry.dc[year >= 1956, 
-                           c("sunlight.duration", "sun.maysep", "WDSP", "SLP", "PRCP", "SNWD", "Tavg", "TempDiffAbs", 
+                           c("sun", "sun.maysep", "WDSP", "SLP", "PRCP", "SNWD", "Tavg", "TempDiffAbs", 
                              "heat.days", "chill.days", "GDD", "bloom_doy")] %>% filter(complete.cases(.))
-lm1 <- lm(bloom_doy ~ sunlight.duration + sun.maysep + WDSP + SLP + PRCP + SNWD + Tavg + 
+lm1 <- lm(bloom_doy ~ sun + sun.maysep + WDSP + SLP + PRCP + SNWD + Tavg + 
             TempDiffAbs + heat.days + chill.days + GDD,
           data=cherry.dc.sub, na.action = na.omit)
 step.lm1 <- step(lm1, direction = "backward")
 
 # Best subset selection
 cherry.dc.pred <- cherry.dc[year >= 1956, 
-                            c("sunlight.duration", "sun.maysep", "WDSP", "SLP", "PRCP", "SNWD", "Tavg", "TempDiffAbs", 
+                            c("sun", "sun.maysep", "WDSP", "SLP", "PRCP", "SNWD", "Tavg", "TempDiffAbs", 
                               "heat.days", "chill.days", "GDD", "bloom_doy")] %>% 
   filter(complete.cases(.))
 cherry.dc.y <- cherry.dc.pred[,"bloom_doy"]
@@ -29,13 +29,13 @@ summary(regsubsets(y = cherry.dc.y, x = cherry.dc.pred, nbest=1 ))
 
 
 cherry.dc.sub2 <- cherry.dc[year >= 1956,
-                            c("sunlight.duration", "sun.maysep", "Tavg", "GDD", "bloom_doy")] %>% filter(complete.cases(.))
+                            c("sun", "sun.maysep", "Tavg", "GDD", "bloom_doy")] %>% filter(complete.cases(.))
 
-lm.b1 <- lm(bloom_doy ~ sunlight.duration + sun.maysep + Tavg + GDD, 
+lm.b1 <- lm(bloom_doy ~ sun + sun.maysep + Tavg + GDD, 
             data = cherry.dc.sub2)
 summary(lm.b1)
 
-lm.b2 <- lm(bloom_doy ~ sunlight.duration + sun.maysep + Tavg, data=cherry.dc.sub2)
+lm.b2 <- lm(bloom_doy ~ sun + sun.maysep + Tavg, data=cherry.dc.sub2)
 AIC(lm.b2, lm.b1)
 
 # Diagnostics
@@ -44,6 +44,14 @@ vif(lm.b2)
 scatterplotMatrix(cherry.dc.sub)
 cor(cherry.dc.sub2)
 
+attach(cherry.dc)
+par(mfrow=c(1,1))
+tyme <- seq(from=1900, to=2021, by=1)
+plot(seq(1, length(PBD), by=1), PBD, type="l")
+plot(seq(1, length(PBD), by=1), sun, type="l")
+plot(seq(1, length(PBD), by=1), Tavg, type="l")
+plot(seq(1, length(PBD), by=1), GDD, type="l")
+detach(cherry.dc)
 
 acf(resid(lm.b2))
 pacf(resid(lm.b2))
@@ -52,13 +60,13 @@ qqPlot(lm.b2)
 plot(lm.b2)
 
 
-t.lm1 <- lm(bloom_doy ~ sunlight.duration + sun.maysep + Tavg + 
-                I(sunlight.duration^2) + I(sunlight.duration^3) + I(sun.maysep^2) 
+t.lm1 <- lm(bloom_doy ~ sun + sun.maysep + Tavg + 
+                I(sun^2) + I(sun^3) + I(sun.maysep^2) 
               , data=cherry.dc.sub2)
-t.lm2 <- lm(bloom_doy ~ sunlight.duration + sun.maysep + Tavg + 
-              I(sunlight.duration^2) + I(sun.maysep^2) 
+t.lm2 <- lm(bloom_doy ~ sun + sun.maysep + Tavg + 
+              I(sun^2) + I(sun.maysep^2) 
             , data=cherry.dc.sub2)
-t.lm3 <- lm(bloom_doy ~ sunlight.duration  + Tavg + sun.maysep + GDD + I(sun.maysep^2) + I(sunlight.duration^2) + I(sunlight.duration^3), data=cherry.dc.sub2)
+t.lm3 <- lm(bloom_doy ~ sun  + Tavg + sun.maysep + GDD + I(sun.maysep^2) + I(sun^2) + I(sun^3), data=cherry.dc.sub2)
 
 AIC(t.lm1, t.lm2, t.lm3)
 anova(t.lm1, t.lm2)
@@ -67,14 +75,14 @@ summary(t.lm3)
 plot(t.lm1)
 
 vif(t.lm3)
-acf(resid(t.lm1))
+acf2(resid(t.lm1))
 pacf(resid(t.lm1))
 durbinWatsonTest(t.lm1)
 
 # set store variables as time series for model
 dc.bloom.ts <- ts(cherry.dc$bloom_doy[36:101])
 dc.x1 <- ts(cherry.dc$Tavg[36:101])
-dc.x2 <- ts(cherry.dc$sunlight.duration[36:101])
+dc.x2 <- ts(cherry.dc$sun[36:101])
 dc.x3 <- ts(cherry.dc$sun.maysep[36:101])
 time.dc <- time(dc.bloom.ts)
 
@@ -145,21 +153,53 @@ dc.pred2 <- as.data.frame(yr) %>%
   bind_cols(predicted_dob = predict(tm.dc.lm3, newdata =.))
 
 
-cherry.df <- cherry.dc[, c("year", "location", "lat", "alt", "bloom_doy", "bloom_date", "hardiness.zone", "sunlight.duration", "Tavg", "GDD", "heat.days", "chill.days")] %>% 
-  rbind(cherry.ja[, c("year", "location", "lat", "alt", "bloom_doy", "bloom_date", "hardiness.zone", "sunlight.duration", "Tavg", "GDD", "heat.days", "chill.days")]) %>% 
-  rbind(cherry.sw[, c("year", "location", "lat", "alt", "bloom_doy", "bloom_date", "hardiness.zone", "sunlight.duration", "Tavg", "GDD", "heat.days", "chill.days")]) 
 
-tavg_temps <- lm(Tavg ~ year + location + sunlight.duration,
+###################################################################################
+cherry.df <- cherry.dc[, c("year", "location", "lat", "long", "alt", "bloom_date", "bloom_doy", "PBD", "Adj.bloom.date", "hardiness.zone", "sun", "sun.maysep", "WDSP", "SLP", "PRCP", "SNWD", "TMIN", "TMAX", "TAVG", "Tavg", "TempDiffAbs", "TempDiffSq", "ppd", "heat.days", "chill.days", "GDD")] %>% 
+  rbind(cherry.ja[, c("year", "location", "lat", "long", "alt", "bloom_date", "bloom_doy", "PBD", "Adj.bloom.date", "hardiness.zone", "sun", "sun.maysep", "WDSP", "SLP", "PRCP", "SNWD", "TMIN", "TMAX", "TAVG", "Tavg", "TempDiffAbs", "TempDiffSq", "ppd", "heat.days", "chill.days", "GDD")]) %>% 
+  rbind(cherry.sw[, c("year", "location", "lat", "long", "alt", "bloom_date", "bloom_doy", "PBD", "Adj.bloom.date", "hardiness.zone", "sun", "sun.maysep", "WDSP", "SLP", "PRCP", "SNWD", "TMIN", "TMAX", "TAVG", "Tavg", "TempDiffAbs", "TempDiffSq", "ppd", "heat.days", "chill.days", "GDD")]) 
+
+tavg_temps <- lm(Tavg ~ year + location + sun,
                  data = cherry.df)
 summary(tavg_temps)
 
 
-yr <- as.data.frame(c(seq(from=1956, to=2032, by=1)) )
-colnames(yr) <- c("year")
-new1 <- cherry.df[cherry.df$location=="washingtondc", c("year", "Tavg", "sunlight.duration")]
-new2 <- merge(yr, new1, by="year", all=TRUE)
+fut.yr <- c(rep(seq(from=2022, to=2032, by=1), 3) )
+fut.suns <- c(ja.sun.fut, dc.sun.fut, sw.sun.fut)
+fut.loc <- c(rep("kyoto", 11), rep("washingtondc", 11), rep("liestal", 11))
+fut.data <- data.frame(location = fut.loc, year = fut.yr, sun = fut.suns)
 
-forecast(tm.dc.lm3, newdata = new2)
+pred.temps <- predict(tavg_temps, newdata=fut.data)
+fut.data$Tavg <- pred.temps
+###################################################################################
+
+
+dc.x1.fut <- ts(fut.data[fut.data$location=="washingtondc", 4])
+dc.x2.fut <- ts(dc.sun.fut)
+time.dc.f <- time(dc.x1.fut)
+
+# plot time vs. covariates
+scatterplot(time.dc.f, dc.x1.fut)
+scatterplot(time.dc.f, dc.x2.fut)
+scatterplot(time.dc.f, dc.x2.fut^2)
+
+# multiple linear regression 
+#tm.dc.lm1 <- lm(dc.bloom.ts ~ time.dc + dc.x1 + dc.x2 + I(dc.x2^2) + I(dc.x2^3) + dc.x3 + I(dc.x3^2))
+#summary(tm.dc.lm1)
+
+# detrend data
+dc.x1.futt <- resid(lm(dc.x1.fut ~ time.dc))
+dc.x2.futt <- resid(lm(dc.x2.fut ~ time.dc))
+
+tm.dc.lm3 <- lm(dc.bloom.ts ~ dc.x1.t + dc.x2.t  + I(dc.x2.t^2) + time.dc )
+plot(tm.dc.lm3)
+
+sqre <- dc.x2.futt^2
+dc.fut <- data.frame(dc.x1.t = dc.x1.futt, dc.x2.t = dc.x2.futt, time.dc = c(time.dc.f))
+dc.dat <- data.frame(dc.x1.t = dc.x1.t, dc.x2.t = dc.x2.t, time.dc = c(time.dc) )
+dc.futr <- rbind(dc.dat, dc.fut)
+
+predict(tm.dc.lm3, newdata = dc.fut)
 tm.dc.lm3$fitted.values
 
 
@@ -171,8 +211,10 @@ dc.arima$arma
 dc.arima$model
 
 acf2(resid(dc.arima))
+acf2(resid(dc.arima)^2)
 dc.arima$loglik
 logLik(tm.dc.lm3)
+dc.arima$aic
 
 
 dc.test <- auto.arima(dc.bloom.ts[1:56], max.p=5, max.d=3, max.q=5, max.P=5, max.D=3, max.Q=5, seasonal=TRUE, method="CSS",
@@ -180,10 +222,14 @@ dc.test <- auto.arima(dc.bloom.ts[1:56], max.p=5, max.d=3, max.q=5, max.P=5, max
 summary(dc.test)
 pred.dc <- forecast(dc.test, xreg=cbind(time.dc[1:56], dc.x1.t[1:56], dc.x2.t[1:56], dc.x3.t[1:56], (dc.x2.t^2)[1:56]))
 pred.dc <- as.data.frame(pred.dc)
+test.yrs <- c(seq(from=2011, to=2021, by=1))
 rmse(cherry$bloom_doy[91:101], pred.dc[1:11,1])
-pred.yrs <- c(seq(from=2022, to=2032, by=1))
-dc.predictions <- data.frame(pred.yrs, pred.dc[1:11,])
+pred.dc.test <- data.frame(test.yrs, pred.dc[1:11,])
 
+
+dc.forecasts <- as.data.frame(forecast(dc.arima, xreg=cbind(time.dc, dc.x1.t, dc.x2.t, dc.x3.t, (dc.x2.t^2)) ))
+pred.yrs <- c(seq(from=2022, to=2032, by=1))
+dc.predictions <- data.frame(year = pred.yrs, prediction = dc.forecasts[1:11,])
 
 
 
@@ -192,7 +238,7 @@ dc.gam <- gam(dc.bloom.ts ~ s(dc.x1.t) + s(dc.x2.t) + s(dc.x3.t))
 summary(dc.gam)
 pacf(resid(dc.gam))
 
-dc.gam2 <- gam(bloom_doy ~ s(sunlight.duration) + s(sun.maysep) + s(Tavg), data=cherry.dc.sub2)
+dc.gam2 <- gam(bloom_doy ~ s(sun) + s(sun.maysep) + s(Tavg), data=cherry.dc.sub2)
 summary(dc.gam2)
 
 
@@ -204,7 +250,7 @@ gam.check(dc.gam2)
 concurvity(dc.gam2)
 
 
-dc.gam4 <- gamm(bloom_doy ~ s(sunlight.duration) + s(sun.maysep) + s(Tavg), 
+dc.gam4 <- gamm(bloom_doy ~ s(sun) + s(sun.maysep) + s(Tavg), 
                 data=cherry.dc.sub2, family=gaussian, 
                 correlation = corAR1(form= ~1))
 acf2(resid(dc.gam4))
@@ -214,7 +260,7 @@ r1 <- start_value_rho(dc.gam2, plot=TRUE)
 nrow(cherry.dc.sub2)
 cherry.dc.sub2$ar <- c(TRUE, rep(FALSE, 62))
 
-dc.gam3 <- bam(bloom_doy ~ s(sunlight.duration) + s(sun.maysep) + s(Tavg), 
+dc.gam3 <- bam(bloom_doy ~ s(sun) + s(sun.maysep) + s(Tavg), 
                data=cherry.dc.sub2, rho=r1, AR.start=cherry.dc.sub2$ar)
 acf2(resid(dc.gam3))
 
@@ -223,7 +269,7 @@ acf2(resid(dc.gam3))
 auto.arima(dc.bloom.ts, max.p=5, max.d=3, max.q=5, max.P=5, max.D=3, max.Q=5, seasonal=TRUE, method="CSS",
            )
 
-ggplot(cherry.dc.sub2, aes(sunlight.duration, bloom_doy)) +
+ggplot(cherry.dc.sub2, aes(sun, bloom_doy)) +
          geom_point()+
          stat_smooth(method = gam, formula = y ~ s(x))
 ggplot(cherry.dc.sub2, aes(sun.maysep, bloom_doy)) +
@@ -234,7 +280,7 @@ ggplot(cherry.dc.sub2, aes(Tavg, bloom_doy)) +
   stat_smooth(method = gam, formula = y ~ s(x))
 
 
-cherry.sw.sub2 <- cherry.sw[60:122, c("sunlight.duration", "sun.maysep", "Tavg", "PBD")]
+cherry.sw.sub2 <- cherry.sw[60:122, c("sun", "sun.maysep", "Tavg", "PBD")]
 sw.pre <- within(cherry.sw.sub2, rm("PBD"))
 predict(dc.gam2, newdata = sw.pre)
 
@@ -242,8 +288,8 @@ predict(dc.gam2)
 
 
 set.seed(7)
-pcr.dc <- pcr(bloom_doy ~ Tavg + sun.maysep + GDD + I(sun.maysep^2) + sunlight.duration + 
-                I(sunlight.duration^2) + I(sunlight.duration^3), 
+pcr.dc <- pcr(bloom_doy ~ Tavg + sun.maysep + GDD + I(sun.maysep^2) + sun + 
+                I(sun^2) + I(sun^3), 
     data=cherry.dc.sub2, center = TRUE, scale = TRUE, validation = "LOO", jackknife = TRUE)
 summary(pcr.dc)
 pcr.dc$loadings
@@ -254,8 +300,8 @@ set.seed(7)
 jack.test(pcr.dc)
 
 set.seed(7)
-pcr.dc2 <- pcr(bloom_doy ~ Tavg + sun.maysep + I(sun.maysep^2) + sunlight.duration + 
-                 I(sunlight.duration^2) + I(sunlight.duration^3), 
+pcr.dc2 <- pcr(bloom_doy ~ Tavg + sun.maysep + I(sun.maysep^2) + sun + 
+                 I(sun^2) + I(sun^3), 
               data=cherry.dc.sub2, center = TRUE, scale = TRUE, validation = "LOO", jackknife = TRUE)
 summary(pcr.dc2)
 pcr.dc2$loadings
@@ -266,14 +312,14 @@ pcr.dc.b <- jack.test(pcr.dc2)
 
 
 library(clusterSim)
-cherry.sw.sub2 <- cherry.sw[60:122, c("sunlight.duration", "sun.maysep", "Tavg", "PBD")]
+cherry.sw.sub2 <- cherry.sw[60:122, c("sun", "sun.maysep", "Tavg", "PBD")]
 bloom.norm2 <- data.Normalization(cherry.sw.sub2[,"PBD"], type="n1", normalization="column")
 sw.pre <- within(cherry.sw.sub2, rm("PBD"))
 colnames(sw.pre)
 colnames(cherry.dc.sub2)
 sw.pre$sun.maysepSq <- (sw.pre$sun.maysep)^2
-sw.pre$sunlightSq <- (sw.pre$sunlight.duration)^2
-sw.pre$sunlightCu <- (sw.pre$sunlight.duration)^3
+sw.pre$sunlightSq <- (sw.pre$sun)^2
+sw.pre$sunlightCu <- (sw.pre$sun)^3
 
 predict(pcr.dc2, newdata = sw.pre )
 
@@ -281,8 +327,8 @@ predict(pcr.dc2, newdata = sw.pre )
 bloom.norm <- data.Normalization(cherry.dc.sub2[,"bloom_doy"], type="n1", normalization="column")
 cherry.pca <- within(cherry.dc.sub2, rm("bloom_doy"))
 cherry.pca$sun.maysepSq <- (cherry.pca$sun.maysep)^2
-cherry.pca$sunlightSq <- (cherry.pca$sunlight.duration)^2
-cherry.pca$sunlightCu <- (cherry.pca$sunlight.duration)^3
+cherry.pca$sunlightSq <- (cherry.pca$sun)^2
+cherry.pca$sunlightCu <- (cherry.pca$sun)^3
 
 detach("package:clusterSim", unload=TRUE)
 
@@ -305,9 +351,9 @@ beta.dc
 
 ## Kyoto
 cherry.ja.sub <- cherry.ja[year >= 1951, 
-                           c("sunlight.duration", "sun.maysep", "WDSP", "SLP", "PRCP", "Tavg", "TempDiffAbs", 
+                           c("sun", "sun.maysep", "WDSP", "SLP", "PRCP", "Tavg", "TempDiffAbs", 
                              "heat.days", "chill.days", "GDD", "PBD")] %>% filter(complete.cases(.))
-lm2 <- lm(PBD ~ sunlight.duration + sun.maysep + WDSP + SLP + PRCP + Tavg + 
+lm2 <- lm(PBD ~ sun + sun.maysep + WDSP + SLP + PRCP + Tavg + 
             TempDiffAbs + heat.days + chill.days + GDD,
           data=cherry.ja.sub, na.action = na.omit)
 # Stepwise Regression
@@ -326,7 +372,7 @@ summary(regsubsets(y = cherry.ja.y, x = cherry.ja.pred, nbest=1 ))
 
 scatterplotMatrix(cherry.ja.sub)
 
-ja.lm1 <- lm(PBD ~ sunlight.duration + sun.maysep + PRCP + heat.days + chill.days + TempDiffAbs, data=cherry.ja.sub)
+ja.lm1 <- lm(PBD ~ sun + I(sun^2) + sun.maysep + PRCP + heat.days + chill.days + TempDiffAbs, data=cherry.ja.sub)
 
 summary(ja.lm1)
 vif(ja.lm1)
@@ -336,31 +382,8 @@ plot(ja.lm1)
 
 
 
-# ARIMA Model
-ja.arima <- auto.arima
 
 
-
-
-# ARIMA Model
-dc.arima <- auto.arima(dc.bloom.ts, max.p=5, max.d=3, max.q=5, max.P=5, max.D=3, max.Q=5, seasonal=TRUE, method="CSS",
-                       xreg=cbind(time.dc, dc.x1.t, dc.x2.t, dc.x3.t, (dc.x2.t^2)) )
-summary(dc.arima)
-dc.arima$arma
-dc.arima$model
-
-acf2(resid(dc.arima))
-dc.arima$loglik
-logLik(tm.dc.lm3)
-
-rmse(cherry.dc$bloom_doy[36:101], )
-
-dc.test <- auto.arima(dc.bloom.ts[1:56], max.p=5, max.d=3, max.q=5, max.P=5, max.D=3, max.Q=5, seasonal=TRUE, method="CSS",
-                      xreg=cbind(time.dc[1:56], dc.x1.t[1:56], dc.x2.t[1:56], dc.x3.t[1:56], (dc.x2.t^2)[1:56]) )
-summary(dc.test)
-pred.dc <- forecast(dc.test, xreg=cbind(time.dc[1:56], dc.x1.t[1:56], dc.x2.t[1:56], dc.x3.t[1:56], (dc.x2.t^2)[1:56]))
-pred.dc <- as.data.frame(pred.dc)
-rmse(cherry$bloom_doy[91:101], pred.dc[1:11,1])
 
 
 
@@ -370,9 +393,9 @@ rmse(cherry$bloom_doy[91:101], pred.dc[1:11,1])
 ## Liestal
 colnames(cherry.sw)
 cherry.sw.sub <- cherry.sw[year >= 1931, 
-                           c("sunlight.duration", "sun.maysep", "PRCP", "SNWD", "Tavg", "TempDiffAbs", 
+                           c("sun", "sun.maysep", "PRCP", "SNWD", "Tavg", "TempDiffAbs", 
                              "heat.days", "chill.days", "GDD", "PBD")] %>% filter(complete.cases(.))
-lm3 <- lm(PBD ~ sunlight.duration + sun.maysep + PRCP + SNWD + Tavg + TempDiffAbs + heat.days + chill.days + GDD,
+lm3 <- lm(PBD ~ sun + sun.maysep + PRCP + SNWD + Tavg + TempDiffAbs + heat.days + chill.days + GDD,
           data=cherry.sw.sub, na.action = na.omit)
 # Stepwise Regression
 step.lm3 <- step(lm3, direction = "backward")
@@ -388,9 +411,42 @@ bestlm3 <- RegBest(y = cherry.sw.y, x = cherry.sw.pred,
 bestlm3$best
 summary(regsubsets(y = cherry.sw.y, x = cherry.sw.pred, nbest=1 ))
 
+scatterplotMatrix((cherry.sw.sub))
 
 
-sw.lm1 <- lm(PBD ~ sunlight.duration)
+sw.lm1 <- lm(PBD ~ PRCP + heat.days + chill.days + GDD + sun.maysep + sun, 
+             data = cherry.sw.sub)
+sw.lm2 <- lm(PBD ~ PRCP + GDD + sun.maysep + sun + I(sun^2) + I(sun^3), 
+             data = cherry.sw.sub)
+
+summary(sw.lm2)
+vif(sw.lm2)
+AIC(sw.lm1, sw.lm2)
+plot(sw.lm2)
+acf2(resid(sw.lm2))
+
+sw.PBD <- ts(cherry.sw$PBD[32:122])
+sw.x1 <- ts(cherry.sw$PRCP[32:122])
+sw.x2 <- ts(cherry.sw$GDD[32:122])
+sw.x3 <- ts(cherry.sw$sun.maysep[32:122])
+sw.x4 <- ts(cherry.sw$sun[32:122])
+time.sw <- time(sw.PBD)
+
+
+sw.arima <- auto.arima(sw.PBD,max.p=5, max.d=3, max.q=5, max.P=5, max.D=3, max.Q=5, seasonal=TRUE, method="CSS",
+                       xreg=cbind(sw.x1, sw.x2, sw.x3, sw.x4, (sw.x4^2), (sw.x4^3)) )
+
+summary(sw.arima)
+acf2(resid(sw.arima))
+acf2(resid(sw.arima)^2)
+sw.arima$arma
+sw.arima$loglik
+sw.arima$aic
+
+
+sw.forecasts <- as.data.frame(forecast(sw.arima, xreg=cbind(sw.x1, sw.x2, sw.x3, sw.x4, (sw.x4^2), (sw.x4^3)) ))
+pred.yrs <- c(seq(from=2022, to=2032, by=1))
+sw.predictions <- data.frame(year = pred.yrs, prediction = sw.forecasts[1:11,])
 
 
 
@@ -398,5 +454,58 @@ sw.lm1 <- lm(PBD ~ sunlight.duration)
 
 
 
-view(cherry.dc)
+# Vancouver
+
+cherry.df.s <- cherry.df[cherry.df$year >= 1956,]
+
+all.lm1 <- lm(PBD ~ lat + sun + sun.maysep + WDSP + SLP + PRCP + SNWD + Tavg + TempDiffSq + ppd + heat.days + chill.days + GDD, data=cherry.df ) 
+summary(all.lm1)
+
+# Stepwise Regression
+step.lm4 <- step(lm1, direction = "backward")
+
+all.lm <- lm(PBD ~ Tavg + sun.maysep + sun + I(sun^2), data=cherry.df)
+summary(all.lm)
+
+acf2(resid(all.lm))
+vif(all.lm)
+plot(all.lm)
+
+ts.pbd.ja <- ts(cherry.df.s[cherry.df.s$location=="kyoto", "PBD"])
+ts.pbd.dc <- ts(cherry.df.s[cherry.df.s$location=="washingtondc", "PBD"])
+ts.pbd.sw <- ts(cherry.df.s[cherry.df.s$location=="liestal", "PBD"])
+
+ts.tavg.ja <- ts(cherry.df.s[cherry.df.s$location=="kyoto", "Tavg"])
+ts.tavg.dc <- ts(cherry.df.s[cherry.df.s$location=="washingtondc", "Tavg"])
+ts.tavg.sw <- ts(cherry.df.s[cherry.df.s$location=="liestal", "Tavg"])
+
+ts.suns.ja <- ts(cherry.df.s[cherry.df.s$location=="kyoto", "sun.maysep"])
+ts.suns.dc <- ts(cherry.df.s[cherry.df.s$location=="washingtondc", "sun.maysep"])
+ts.suns.sw <- ts(cherry.df.s[cherry.df.s$location=="liestal", "sun.maysep"])
+
+ts.sun.ja <- ts(cherry.df.s[cherry.df.s$location=="kyoto", "sun"])
+ts.sun.dc <- ts(cherry.df.s[cherry.df.s$location=="washingtondc", "sun"])
+ts.sun.dc <- ts(cherry.df.s[cherry.df.s$location=="liestal", "sun"])
+library(vars)
+
+
+var.df <- cherry.df.s[,c("Tavg", "sun", "sun.maysep")]
+y.df <- data.frame(JA = c(ts.pbd.ja), DC = c(ts.pbd.dc), SW = c(ts.pbd.sw))
+
+acf2()
+
+all.var <- ar(cbind(ts.pbd.ja, ts.pbd.dc, ts.pbd.sw))
+all.var$ar
+acf(all.var$resid[-1,])
+
+#VARselect(, lag.max = 1,
+          #type = “const”, exogen = cbind())
+
+all.var2 <- VAR(cbind(ts.pbd.ja, ts.pbd.dc, ts.pbd.sw), p=1 )
+coef(all.var2)
+predict(all.var2, n.ahead=10)
+
+
+
+
 
