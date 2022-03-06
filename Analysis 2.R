@@ -82,7 +82,7 @@ lm.r1 <- lm(bloom_doy ~ SLP + PRCP + WDSP + Tavg + TempDiffAbs + chill.days + GD
             data=cherry.dc.sub)
 summary(lm.r1)
 
-lm.r2 <- lm(bloom_doy ~ SLP + PRCP + WDSP + Tavg + TempDiffAbs + chill.days + GDD + sun.mar + sun.maysep,
+lm.r2 <- lm(bloom_doy ~ SLP + PRCP + WDSP + Tavg + TempDiffAbs + chill.days + GDD,
             data=cherry.dc.sub)
 summary(lm.r2)
 
@@ -133,7 +133,7 @@ sun_ms <- ts(cherry.dc$sun.maysep[53:101])
 
 dc.arima <- auto.arima(dc.bloom.ts, max.p=5, max.d=5, max.q=5, max.P=5, max.D=5, max.Q=5, 
                        seasonal=TRUE, method="ML",
-                       xreg=cbind(x_slp, prcp, wdsp, t_avg, tempdiff, chill, gdd, sun.mar, sun_ms) )
+                       xreg=cbind(x_slp, prcp, wdsp, t_avg, tempdiff, chill, gdd) )
 summary(dc.arima)
 dc.arima$arma
 
@@ -146,9 +146,9 @@ cbind("Regression Errors" = residuals(dc.arima, type="regression"),
 checkresiduals(dc.arima)
 # ARIMA residuals approximate white noise, are normally distributed, but the acf residual plot does not look good
 
-dc.arima2 <- Arima(dc.bloom.ts, order = c(6, 0, 3), seasonal = list(order=c(5, 0, 2), period=1), 
+dc.arima2 <- Arima(dc.bloom.ts, order = c(6, 0, 4), seasonal = list(order=c(6, 0, 2), period=4), 
                    method="ML",
-                   xreg=cbind(x_slp, prcp, wdsp, t_avg, tempdiff, chill, gdd, sun.mar, sun_ms) )
+                   xreg=cbind(x_slp, prcp, wdsp, t_avg, tempdiff, chill, gdd) )
 dc.arima2$arma
 checkresiduals(dc.arima2)
 summary(dc.arima2)
@@ -160,9 +160,9 @@ summary(dc.arima2)
 
 # predictions from ARIMA model
 dc.arima.pred2 <- as.data.frame(forecast(dc.arima2, xreg=cbind(x_slp, prcp, wdsp, t_avg, tempdiff, 
-                                                             chill, gdd, sun.mar, sun_ms)))[1:11,1]
+                                                             chill, gdd)))[1:11,1]
 dc.arima.pred <- as.data.frame(forecast(dc.arima, xreg=cbind(x_slp, prcp, wdsp, t_avg, tempdiff, 
-                                                             chill, gdd, sun.mar, sun_ms)))[1:11,1]
+                                                             chill, gdd)))[1:11,1]
 
 
 # predict covariates
@@ -348,9 +348,9 @@ dc.pred.lmr2 <- predict(lm.r2, newdata=fut.data2)
 
 # forecast bloom DOYs from ARIMA models
 dc.arima.pred2 <- as.data.frame(forecast(dc.arima2, xreg=cbind(x_slp, prcp, wdsp, t_avg, tempdiff, 
-                                                              chill, gdd, sun.mar, sun_ms)))[1:11,1]
+                                                              chill, gdd)))[1:11,1]
 dc.arima.pred <- as.data.frame(forecast(dc.arima, xreg=cbind(x_slp, prcp, wdsp, t_avg, tempdiff, 
-                                                             chill, gdd, sun.mar, snow, sun_ms)))[1:11,1]
+                                                             chill, gdd)))[1:11,1]
 
 # Root Mean Square Errors for each model
 rmse(cherry.dc.sub$bloom_doy, fitted(lm.r1))  # linear lm.r1
@@ -361,6 +361,9 @@ rmse(cherry.dc$bloom_doy[53:101], as.vector(dc.arima2$fitted)) # ARIMA2 (6 0 3; 
 # ARIMA2 has the lowest RMSE, ARIMA2 is our final model.
 # Final forecasted DOYs for 2022-2032 is:
 dc.arima.pred2
+
+# prediction for 2022: 
+as.Date(dc.arima.pred2[1], origin="2022-01-01")
 
 
 
@@ -493,8 +496,9 @@ beta.dc
 #############################################################################################
 #############################################################################################
 cherry.ja.sub <- cherry.ja[cherry.ja$year >= 1953, 
-                           c("sun.mar", "sun.maysep", "WDSP", "SLP", "PRCP", "Tavg", "TempDiffAbs", 
-                             "heat.days", "chill.days", "GDD", "PBD")]
+                           c("year", "sun.mar", "sun.maysep", "WDSP", "SLP", "PRCP", "Tavg", 
+                             "TempDiffAbs", "heat.days", "chill.days", "GDD", "PBD", "pos.sun", 
+                             "sun.time", "slap", "precip")]
 
 tyme2 <- seq(from=1953, to=2021, by=1)
 plot(tyme2, cherry.ja.sub$WDSP, type="l")
@@ -503,46 +507,73 @@ plot(tyme2, cherry.ja.sub$PRCP, type="l")
 
 bwid <- 3.49*sd(!is.na(cherry.ja.sub$SLP))*(sum(!is.na(cherry.ja.sub$SLP))^(-1/3)) / 10
 hist(~SLP, data=cherry.ja.sub, w=.034)
+hist(~SLP, data=cherry.ja.sub[1:42,], w=.04)
 
 bwid <- 3.49*sd(!is.na(cherry.ja.sub$PRCP))*(sum(!is.na(cherry.ja.sub$PRCP))^(-1/3))
 hist(~PRCP, data=cherry.ja.sub, w=20)
 
-# create time series for PRCP and impute missing values
+bwid <-3.49*sd(!is.na(cherry.ja.sub$WDSP))*(sum(!is.na(cherry.ja.sub$WDSP))^(-1/3))
+hist(~WDSP, data=cherry.ja.sub, w=0.2)
+
+# impute missing value for PRCP using arima modeled time series 
 ts.prcp <- ts(cherry.ja$PRCP[52:122])
+summary(auto.arima(ts.prcp, method="ML"))
 prcp.m1 <- Arima(ts.prcp, order = c(6, 1, 3), seasonal = list(order=c(3, 1, 2), period=4), 
-                 method="ML",)
+                 method="ML")
 prcp.m1$arma
 checkresiduals(prcp.m1)
 summary(prcp.m1)
+# high RMSE
 
-library(imputeTS)
-test1 <- na_kalman(as.vector(prcp.m1$fitted), smooth=TRUE)
-tyme3 <- seq(from=1953, to=2021, by=1)
-plot(tyme3, test2, type="l")
-plot(tyme3, cherry.ja.sub$PRCP, type="l")
-mean(cherry.ja.sub$PRCP, na.rm=TRUE)
-test2 <- na_kalman(cherry.ja.sub$PRCP, smooth=TRUE, model="auto.arima")
+sd(cherry.ja$PRCP[52:122], na.rm=TRUE)
+# sd even larger so we go with arima model anyway
 
-cherry.ja %>% select(year, PRCP)
+prcp.m2 <- Arima(ts.prcp[1:54], order = c(6, 1, 3), seasonal = list(order=c(3, 1, 2), period=4), 
+                 method="ML")
+summary(prcp.m2)
+cherry.ja[cherry.ja$year==2005,"PRCP"] <- as.vector(predict(prcp.m2, n.ahead=1)$pred)
+cherry.ja.sub[cherry.ja.sub$year==2005,"PRCP"] <- as.vector(predict(prcp.m2, n.ahead=1)$pred)
 
 
-numsim <- 10000
-slp.smp <- NULL
-prc.smp <- NULL
-set.seed(7)
-for (k in 1:numsim){
-  slp.smp[k] <- sample(cherry.ja[c(54:65,74:75,77:88,91:105,107:122), "SLP"], size=1)
-  prc.smp[k] <- sample(cherry.ja[c(52:90,100,105,107:122), "PRCP"], size=1)
-  
-}
-plot(density(slp.smp))
-plot(density(prc.smp))
+# since SLP is approximately normally distributed white noise until 1994, sample missing values until 1994 from N(mu, sigma^2) distribution
+st1 <- mean(cherry.ja.sub[cherry.ja.sub$year>=1953 & cherry.ja.sub$year<=1994, "SLP"], na.rm=TRUE)
+st2 <- sd(cherry.ja.sub[cherry.ja.sub$year>=1953 & cherry.ja.sub$year<=1994, "SLP"], na.rm=TRUE)
+sum(is.na(cherry.ja.sub[cherry.ja.sub$year>=1953 & cherry.ja.sub$year<=1994, "SLP"]))
 
 set.seed(7)
-v1 <- sample(slp.smp, size = 14)
-v2 <- sample(prc.smp, size = 14)
-cherry.ja$SLP[c(52:53,66:73,76,89:90,106)] <- v1
-cherry.ja$PRCP[c(91:99,101:104,106)] <- v2
+st3 <- rnorm(11, mean=st1, sd=st2)
+cherry.ja[is.na(cherry.ja$SLP), "year"]
+
+cherry.ja[cherry.ja$year>=1965 & cherry.ja$year<=1972, "SLP"] <- st3[1:8]
+cherry.ja.sub[cherry.ja.sub$year>=1965 & cherry.ja.sub$year<=1972, "SLP"] <- st3[1:8]
+cherry.ja[cherry.ja$year==1975, "SLP"] <- st3[9]
+cherry.ja.sub[cherry.ja.sub$year==1975, "SLP"] <- st3[9]
+cherry.ja[cherry.ja$year>=1988 & cherry.ja$year<=1989, "SLP"] <- st3[10:11]
+cherry.ja.sub[cherry.ja.sub$year>=1988 & cherry.ja.sub$year<=1989, "SLP"] <- st3[10:11]
+
+# less variability and clear moving average trend after 1994. So fit MA() model to predict missing values after 1994
+ts.slp <- ts(cherry.ja.sub[cherry.ja.sub$year>=1995 & cherry.ja.sub$year<=2021, "SLP"])
+slp.m1 <- Arima(ts.slp, order = c(0, 0, 2), seasonal = list(order=c(0, 0, 0), period=1), 
+                method="ML")
+checkresiduals(slp.m1)
+summary(slp.m1)
+
+slp.m2 <- Arima(ts.slp[1:10], order = c(0, 0, 2), seasonal = list(order=c(0, 0, 0), period=1), 
+                method="ML")
+summary(slp.m2)
+cherry.ja[cherry.ja$year==2005, "SLP"] <- as.vector(predict(slp.m2, n.ahead=1)$pred)
+cherry.ja.sub[cherry.ja.sub$year==2005, "SLP"] <- as.vector(predict(slp.m2, n.ahead=1)$pred)
+
+
+# model missing values for WDSP since 1973 as time series with drift
+ts.wdsp <- ts(cherry.ja.sub[cherry.ja.sub$year>=1973, "WDSP"])
+wdsp.m1 <- auto.arima(ts.wdsp, allowdrift=TRUE)
+wdsp.m1 <- Arima(ts.wdsp, order = c(0, 0, 1), seasonal = list(order=c(0, 0, 0), period=1), 
+                 method="ML", include.drift=TRUE)
+checkresiduals(wdsp.m1)
+summary(wdsp.m1)
+
+
 
 
 # Stepwise Regression
