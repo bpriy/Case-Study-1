@@ -364,11 +364,14 @@ rmse(cherry.dc$bloom_doy[53:101], as.vector(dc.arima2$fitted)) # ARIMA2 (6 0 3; 
 
 # ARIMA2 has the lowest RMSE, ARIMA2 is our final model.
 summary(dc.arima2)
+
+# Forecast
+#######################################################################
 # Final forecasted DOYs for 2022-2032 are:
-dc.arima.pred2
+dc.final.pred <- dc.arima.pred2
 
 # prediction for 2022: 
-as.Date(dc.arima.pred2[1], origin="2022-01-01")
+as.Date(dc.final.pred[1], origin="2022-01-01")
 
 
 
@@ -834,11 +837,11 @@ ja.arima.pred <- as.data.frame(forecast(ja.arima, xreg=cbind(t_avg, chill, gdd, 
 fitjanomis <- as.vector(na_remove(ja.arima$fitted))
 rmse(cherry.ja$PBD[c(53:72,74:89,91:122)],fitjanomis) #RMSE
 
-# Final forecasted DOYs for 2022-2032 are:
-ja.arima.pred
+# Final unadjusted forecasted DOYs for 2022-2032 are:
+ja.final.pred <- ja.arima.pred - 7*(1-(0.8*(1/0.7)))
 
-# prediction for 2022: 
-as.Date(ja.arima.pred[1], origin="2022-01-01")
+# forecast date for 2022: 
+as.Date(ja.final.pred[1], origin="2022-01-01")
 
 
 
@@ -1054,7 +1057,7 @@ checkresiduals(sw.arima2)
 summary(sw.arima2)
 
 
-#Predict Covariates
+# Predict Covariates
 ###################################################
 # Tavg
 ##########
@@ -1180,12 +1183,13 @@ summary(sw.arima)
 sw.arima.pred <- as.data.frame(forecast(sw.arima, 
                                         xreg=cbind(sun_ms, tempdif, gdd, t_avg, chill)))[1:11,1]
 
-# Final forecasted DOYs for 2022-2032 are:
-sw.arima.pred
+# Final unadjusted forecasted DOYs for 2022-2032 are:
+sw.final.pred <- sw.arima.pred - ((1-(0.25*(1/0.7)))*7 - 0.5)
 
-# prediction for 2022: 
-as.Date(sw.r3.pred[1], origin="2022-01-01")
+# forecast date for 2022: 
+as.Date(sw.final.pred[1], origin="2022-01-01")
 
+# forecast does not appear sensible
 plot(tyme, cherry.sw$PBD, type="l")
 
 
