@@ -693,7 +693,7 @@ cherry.ja$TAVG <- ghcn.ja[,5]
 
 # PRCP, SNWD
 yr <- seq(from=1900, to=2021, by=1)
-ghcn.ja <- data.frame(yr, c(rep(NA, 122)), c(rep(NA, 122)), c(rep(NA, 122)), c(rep(NA, 122)) )
+ghcn.ja <- data.frame(yr, c(rep(NA, 122)), c(rep(NA, 122)), c(rep(NA, 122)) )
 stor <- list(NULL)
 as.Date <- base::as.Date
 
@@ -705,78 +705,67 @@ for(i in 1:72) {
                                      to=as.Date(paste(yr[i+50],"12-31",sep="-")), by="day"))
   stor[[i]] <- merge(stor[[i]], yvec, by="DATE", all=T)
 } 
-for(i in 1:72) for(j in 1:365) for(k in 3:4) {  
-  ifelse(is.na(stor[[i]][j,k]), 
-         stor[[i]][j,k] <- 0, 
-         stor[[i]][j,k] <- stor[[i]][j,k])
+for(i in 1:72) for(j in 1:365)  {
+  ifelse(all(is.na(stor[[i]][,3])), ghcn.ja[i,3] <- NA,
+    {ifelse(is.na(stor[[i]][j,3]), 
+           stor[[i]][j,3] <- 0, 
+           stor[[i]][j,3] <- stor[[i]][j,3])} )
+  
+  ifelse(all(is.na(stor[[i]][,4])), ghcn.ja[i,4] <- NA,
+         {ifelse(is.na(stor[[i]][j,4]), 
+                 stor[[i]][j,4] <- 0, 
+                 stor[[i]][j,4] <- stor[[i]][j,4])} )
 }  
-for (i in 1:72) {ghcn.ja[i,2] <- sum(stor[[i]][1:bd.ja[i+50],3])}
-ghcn.ja <- ghcn.ja[-16,]
-
-for(i in 1:15) {
-  ifelse(is.na(cherry.ja$PRCP[i+90]), 
-         cherry.ja$PRCP[i+90] <- ghcn.ja[i,2], 
-         cherry.ja$PRCP[i+90] <- cherry.ja$PRCP[i+90])  }
-
-
-
-
-
-
-yr <- seq(from=1990, to=2005, by=1)
-ghcn.ja <- data.frame(yr, c(rep(NA, 16)) )
-stor <- list(NULL)
-for(i in 1:16) {
-
-    stor[[i]] <- kyoto.ghcn %>% 
-      filter(year == yr[i]) %>% 
-      select(year, PRCP, DATE) 
-    yvec <- data.frame(DATE = seq.Date(from=as.Date(paste(yr[i],"01-01",sep="-")), 
-                                       to=as.Date(paste(yr[i],"12-31",sep="-")), by="day"))
-    stor[[i]] <- merge(stor[[i]], yvec, by="DATE", all=T)
-} 
-for(i in 1:16) for(j in 1:365){  
-    ifelse(is.na(stor[[i]][j,3]), 
-                             stor[[i]][j,3] <- 0, 
-                             stor[[i]][j,3] <- stor[[i]][j,3])
-}  
-for (i in 1:16) {ghcn.ja[i,2] <- sum(stor[[i]][1:bd.ja[i+90],3])}
-ghcn.ja <- ghcn.ja[-16,]
-
-for(i in 1:15) {
-ifelse(is.na(cherry.ja$PRCP[i+90]), 
-       cherry.ja$PRCP[i+90] <- ghcn.ja[i,2], 
-       cherry.ja$PRCP[i+90] <- cherry.ja$PRCP[i+90])  }
+for (i in 1:72) for(k in 3:4) {ghcn.ja[i+50,k] <- sum(stor[[i]][1:bd.ja[i+50],k])}
 
 
 
 yr <- seq(from=1900, to=2021, by=1)
-month.ja <- data.frame(yr, c(rep(NA, 122)), c(rep(NA, 122)), c(rep(NA, 122)),
-                      c(rep(NA, 122)), c(rep(NA, 122)), c(rep(NA, 122)), c(rep(NA, 122)) )
+month.ja <- data.frame(yr, mpct.pos.sun=c(rep(NA, 122)), t.sun.time=c(rep(NA, 122)), 
+                       msealevel.ap=c(rep(NA, 122)), t.snwdp=c(rep(NA, 122)), t.precip=c(rep(NA, 122)) )
 stor <- list(NULL)
-for(i in 1:122) for(m in 2:8) {
+for(i in 1:122)  {
   stor[[i]] <- kyoto %>% 
     filter(Year == yr[i]) %>% 
-    select(Year, mpct.pos.sun, msealevel.ap, t.precip, t.snwdp, mdtemp, md.mintemp, md.maxtemp) 
+    select(Year, Month, mpct.pos.sun, t.sun.time, msealevel.ap, t.precip, t.snwdp, mdtemp, 
+           md.mintemp, md.maxtemp) 
+}  
+for(i in 1:122) {
+  #mpct.pos.sun
+  ifelse(all(!is.na(stor[[i]][1:3,"mpct.pos.sun"])),
+         month.ja[i,2] <- mean(stor[[i]][1:3,"mpct.pos.sun"], na.rm=TRUE),
+         month.ja[i,2] <- NA)
   
-  ifelse(nrow(stor[[i]]) > 1,
-         ifelse(sum(is.na(stor[[i]][1:bd.ja[i],m])) > 0.25*bd.ja[i],  
-                month.ja[i,m] <- NA,
-                ifelse(is.na(stor[[i]][nrow(stor[[i]]),m]) | is.na(stor[[i]][1,m]), 
-                       {stor[[i]][nrow(stor[[i]]),m] <- mean(stor[[i]][354:364,m], na.rm=T)
-                       stor[[i]][1,m] <- mean(stor[[i]][2:12,m], na.rm=T)
-                       stor[[i]][,m] <- na.approx(stor[[i]][,m]) 
-                       month.ja[i,m] <- sum(stor[[i]][1:bd.ja[i],m])}, 
-                       {stor[[i]][,m] <- na.approx(stor[[i]][,m]) 
-                       month.ja[i,m] <- sum(stor[[i]][1:bd.ja[i],m])})  ),
-         {month.ja[i,2] <- NA
-         month.ja[i,3] <- NA
-         month.ja[i,4] <- NA
-         month.ja[i,5] <- NA
-         month.ja[i,6] <- NA
-         month.ja[i,7] <- NA
-         month.ja[i,8] <- NA})}
-
+  #t.sun.time
+  ifelse(all(!is.na(stor[[i]][1:3,"t.sun.time"])),
+         month.ja[i,3] <- sum(stor[[i]][1:3,"t.sun.time"], na.rm=TRUE),
+         month.ja[i,3] <- NA)
+  
+  #msealevel.ap
+  ifelse(all(!is.na(stor[[i]][1:3,"msealevel.ap"])),
+         {if (!is.na(stor[[i]][1,"msealevel.ap"])) 
+          stor[[i]][1,"msealevel.ap"] <-conv_unit(stor[[i]][1,"msealevel.ap"], from="hPa", to="mbar")*0.1
+         if (!is.na(stor[[i]][2,"msealevel.ap"])) 
+          stor[[i]][2,"msealevel.ap"] <-conv_unit(stor[[i]][2,"msealevel.ap"], from="hPa", to="mbar")*0.1
+         if (!is.na(stor[[i]][3,"msealevel.ap"])) 
+          stor[[i]][3,"msealevel.ap"] <-conv_unit(stor[[i]][3,"msealevel.ap"], from="hPa", to="mbar")*0.1
+         month.ja[i,4] <- mean(stor[[i]][1:3,"msealevel.ap"], na.rm=TRUE)},
+         month.ja[i,4] <- NA)
+  
+   #t.snwdp
+  ifelse(all(!is.na(stor[[i]][1:3,"t.snwdp"])),
+         month.ja[i,5] <- sum(stor[[i]][1:3,"t.snwdp"], na.rm=TRUE),
+         month.ja[i,5] <- NA)
+  
+  #t.precip
+  ifelse(all(!is.na(stor[[i]][1:3,"t.precip"])),
+         month.ja[i,6] <- sum(stor[[i]][1:3,"t.precip"], na.rm=TRUE),
+         month.ja[i,6] <- NA)
+}
+cherry.ja$pos.sun <- month.ja[,"mpct.pos.sun"]
+cherry.ja$sun.time <- month.ja[,"t.sun.time"]
+cherry.ja$slap <- month.ja[,"msealevel.ap"]
+cherry.ja$precip <- month.ja[,"t.precip"]
 
 
 # Temp Diff
@@ -1596,7 +1585,8 @@ ja.sun <- NULL
 yr <- seq(from=1900, to=2021, by=1)
 for(k in 1:length(yr)) {
   sunlist.ja[[k]] <- sun_ja %>% 
-    filter(date >= as.Date(paste(yr[k], "01-01", sep="-")) & date <= as.Date(paste(yr[k], "04-01", sep="-")) ) %>% 
+    filter(date >= as.Date(paste(yr[k], "01-01", sep="-")) & 
+             date <= as.Date(paste(yr[k], "04-01", sep="-")) ) %>% 
     select(sunlight_duration) 
   
   sunhr.ja[k] <- sum(sunlist.ja[[k]])
@@ -1614,7 +1604,8 @@ dc.sun <- NULL
 yr1 <- seq(from=1921, to=2021, by=1)
 for(k in 1:length(yr1)) {
   sunlist.dc[[k]] <- sun_dc %>% 
-    filter(date >= as.Date(paste(yr[k], "01-01", sep="-")) & date <= as.Date(paste(yr[k], "04-01", sep="-")) ) %>% 
+    filter(date >= as.Date(paste(yr[k], "01-01", sep="-")) & 
+             date <= as.Date(paste(yr[k], "04-01", sep="-")) ) %>% 
     select(sunlight_duration) 
   
   sunhr.dc[k] <- sum(sunlist.dc[[k]]) 
