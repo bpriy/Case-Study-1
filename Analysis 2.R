@@ -39,7 +39,7 @@ summary(regsubsets(y = cherry.dc.y, x = cherry.dc.pred, nbest=1 ))
 
 
 # models
-lm.b1 <- lm(bloom_doy ~ SNWD + WDSP + PRCP + SLP + TempDiffABs + chill.days + heat.days + GDD, 
+lm.b1 <- lm(bloom_doy ~ SNWD + WDSP + PRCP + SLP + TempDiffAbs + chill.days + heat.days + GDD, 
             data = cherry.dc.sub)
 summary(lm.b1)
 
@@ -47,11 +47,11 @@ lm.b2 <- lm(bloom_doy ~ WDSP + SLP + PRCP + SNWD + TempDiffAbs + heat.days + chi
             data=cherry.dc.sub)
 summary(lm.b2)
 
-lm.b3 <- lm(bloom_doy ~ SNWD + WDSP + PRCP + SLP + TempDiffABs + chill.days + heat.days + GDD + sun.maysep,
+lm.b3 <- lm(bloom_doy ~ SNWD + WDSP + PRCP + SLP + TempDiffAbs + chill.days + heat.days + GDD + sun.maysep,
             data=cherry.dc.sub)
 summary(lm.b3)
 
-lm.b4 <- lm(bloom_doy ~ SNWD + WDSP + PRCP + SLP + TempDiffABs + chill.days + heat.days + GDD + sun.mar,
+lm.b4 <- lm(bloom_doy ~ SNWD + WDSP + PRCP + SLP + TempDiffAbs + chill.days + heat.days + GDD + sun.mar,
             data=cherry.dc.sub)
 summary(lm.b4)
 
@@ -161,6 +161,7 @@ dc.arima$aic
 dc.arima2$aic
 # final arima model is
 summary(dc.arima2)
+dc.arima2$arma
 
 # predictions from ARIMA model
 dc.arima.pred2 <- as.data.frame(forecast(dc.arima2, xreg=cbind(x_slp, prcp, wdsp, t_avg, tempdiff, 
@@ -191,10 +192,10 @@ summary(lm.c1)
 plot(lm.c1)
 acf2(resid(lm.c1))
 acf2(resid(lm.c1)^2)
+durbinWatsonTest(lm.c1)
+durbinWatsonTest(lm.c1)
 
-lm.t1 <- auto.arima(t_avg, max.p=5, max.d=5, max.q=5, max.P=5, max.D=5, max.Q=5, 
-            seasonal=TRUE, method="ML",
-            xreg=cbind(sun.mar, sun_ms, wdsp, x_slp, prcp, tempdiff, chill, heating, gdd) )
+lm.t1 <- auto.arima(t_avg, max.p=5, max.d=5, max.q=5, max.P=5, max.D=5, max.Q=5, seasonal=TRUE, method="ML", xreg=cbind(sun.mar, sun_ms, wdsp, x_slp, prcp, tempdiff, chill, heating, gdd) )
 summary(lm.t1)
 lm.t1$arma
 checkresiduals(lm.t1)
@@ -207,9 +208,12 @@ Tavg.fut <- as.data.frame(forecast(lm.t1,
 lm.c2 <- lm(TempDiffAbs ~ year + sun.maysep + sun.mar + PRCP + SLP + WDSP + Tavg + chill.days + heat.days + GDD, data=cherry.dc.sub2)
 summary(lm.c2)
 plot(lm.c2)
+acf2(resid(lm.c2))
+acf2(resid(lm.c2)^2)
+durbinWatsonTest(lm.c2)
+durbinWatsonTest(lm.c2)
 
-lm.t2 <- auto.arima(tempdiff, max.p=5, max.d=5, max.q=5, max.P=5, max.D=5, max.Q=5, 
-                    seasonal=TRUE, method="ML",
+lm.t2 <- auto.arima(tempdiff, max.p=5, max.d=5, max.q=5, max.P=5, max.D=5, max.Q=5, seasonal=TRUE, method="ML",
                     xreg=cbind(sun.mar, sun_ms, wdsp, x_slp, prcp, t_avg, chill, heating, gdd) )
 summary(lm.t2)
 lm.t2$arma
@@ -224,10 +228,13 @@ lm.c3 <- lm(PRCP ~ year + sun.maysep + sun.mar + TempDiffAbs + SLP + WDSP + chil
 summary(lm.c3)
 plot(lm.c3)
 acf2(resid(lm.c3))
+acf2(resid(lm.c3)^2)
+durbinWatsonTest(lm.c3)
+durbinWatsonTest(lm.c3)
 
-lm.t3 <- auto.arima(prcp, max.p=5, max.d=5, max.q=5, max.P=5, max.D=5, max.Q=5, 
-                    seasonal=TRUE, method="ML",
+lm.t3 <- auto.arima(prcp, max.p=5, max.d=5, max.q=5, max.P=5, max.D=5, max.Q=5, seasonal=TRUE, method="ML", 
                     xreg=cbind(sun.mar, sun_ms, wdsp, x_slp, tempdiff, t_avg, chill, heating, gdd) )
+
 summary(lm.t3)
 lm.t3$arma
 checkresiduals(lm.t3)
@@ -241,6 +248,9 @@ lm.c4 <- lm(SLP ~ year + sun.maysep + sun.mar + TempDiffAbs + Tavg + PRCP + wdsp
 summary(lm.c4)
 plot(lm.c4)
 acf2(resid(lm.c4))
+acf2(resid(lm.c4)^2)
+durbinWatsonTest(lm.c4)
+durbinWatsonTest(lm.c4)
 
 lm.t4 <- auto.arima(x_slp, max.p=5, max.d=5, max.q=5, max.P=5, max.D=5, max.Q=5, 
                     seasonal=TRUE, method="ML",
@@ -258,6 +268,9 @@ lm.c5 <- lm(wdsp ~ year + sun.maysep + sun.mar + TempDiffAbs + Tavg + PRCP + SLP
 summary(lm.c5)
 plot(lm.c5)
 acf2(resid(lm.c5))
+acf2(resid(lm.c5)^2)
+durbinWatsonTest(lm.c5)
+durbinWatsonTest(lm.c5)
 
 lm.t5 <- auto.arima(wdsp, max.p=5, max.d=5, max.q=5, max.P=5, max.D=5, max.Q=5, 
                     seasonal=TRUE, method="ML",
@@ -275,6 +288,9 @@ lm.c6 <- lm(log(chill.days) ~ year + sun.maysep + sun.mar + TempDiffAbs + Tavg +
 summary(lm.c6)
 plot(lm.c6)
 acf2(resid(lm.c6))
+acf2(resid(lm.c6)^2)
+durbinWatsonTest(lm.c6)
+durbinWatsonTest(lm.c6)
 
 lm.t6 <- auto.arima(chill, max.p=5, max.d=5, max.q=5, max.P=5, max.D=5, max.Q=5, 
                     seasonal=TRUE, method="ML",
@@ -292,6 +308,9 @@ lm.c7 <- lm(GDD ~ year + sun.maysep + sun.mar + TempDiffAbs + Tavg + PRCP + SLP 
 summary(lm.c7)
 plot(lm.c7)
 acf2(resid(lm.c7))
+acf2(resid(lm.c7)^2)
+durbinWatsonTest(lm.c7)
+durbinWatsonTest(lm.c7)
 
 lm.t7 <- auto.arima(gdd, max.p=5, max.d=5, max.q=5, max.P=5, max.D=5, max.Q=5, 
                   seasonal=TRUE, method="ML",
@@ -310,6 +329,8 @@ summary(lm.c8)
 plot(lm.c8)
 acf2(resid(lm.c8))
 acf2(resid(lm.c8)^2)
+durbinWatsonTest(lm.c8)
+durbinWatsonTest(lm.c8)
 
 data1 <- cherry.dc.sub2[-c(26),]
 plot(data1$year, log(data1$SNWD+.01))
@@ -365,10 +386,20 @@ rmse(cherry.dc$bloom_doy[53:101], as.vector(dc.arima2$fitted)) # ARIMA2 (6 0 3; 
 # ARIMA2 has the lowest RMSE, ARIMA2 is our final model.
 summary(dc.arima2)
 
+# residuals plots
+df3 <- data.frame(fitted=fitted(dc.arima2), residuals=residuals(dc.arima2))
+ggplot(df3, aes(x=fitted, y=residuals)) +
+  geom_point() 
+qqPlot(residuals(dc.arima2))
+
+
+
 # Forecast
 #######################################################################
 # Final forecasted DOYs for 2022-2032 are:
 dc.final.pred <- dc.arima.pred2
+yr.f <- seq(from=2022, to=2032, by=1)
+dc.tbl <- data.frame(year=yr.f, dc.final.pred)
 
 # prediction for 2022: 
 as.Date(dc.final.pred[1], origin="2022-01-01")
@@ -505,7 +536,7 @@ beta.dc
 #############################################################################################
 cherry.ja.sub <- cherry.ja[cherry.ja$year >= 1953, 
                            c("year", "sun.mar", "sun.maysep", "WDSP", "SLP", "PRCP", "TAVG", 
-                             "TempDiffAbs", "heat.days", "chill.days", "GDD", "PBD", "pos.sun", 
+                             "Tavg", "heat.days", "chill.days", "GDD", "PBD", "pos.sun", 
                              "sun.time", "slap", "precip")]
 
 tyme2 <- seq(from=1953, to=2021, by=1)
@@ -525,8 +556,9 @@ hist(~WDSP, data=cherry.ja.sub, w=0.2)
 
 # impute missing value for PRCP using arima modeled time series 
 ts.prcp <- ts(cherry.ja$PRCP[52:122])
-summary(auto.arima(ts.prcp, method="ML"))
-prcp.m1 <- Arima(ts.prcp, order = c(6, 1, 3), seasonal = list(order=c(3, 1, 2), period=4), 
+summary(auto.arima(ts.prcp, max.p=5, max.d=5, max.q=5, max.P=5, max.D=5, max.Q=5, 
+                   seasonal=TRUE,method="ML"))
+prcp.m1 <- Arima(ts.prcp, order = c(2, 1, 3), seasonal = list(order=c(2, 1, 2), period=3), 
                  method="ML")
 prcp.m1$arma
 checkresiduals(prcp.m1)
@@ -536,7 +568,7 @@ summary(prcp.m1)
 sd(cherry.ja$PRCP[52:122], na.rm=TRUE)
 # sd even larger so we go with arima model anyway
 
-prcp.m2 <- Arima(ts.prcp[1:54], order = c(6, 1, 3), seasonal = list(order=c(3, 1, 2), period=4), 
+prcp.m2 <- Arima(ts.prcp[1:54], order = c(2, 1, 3), seasonal = list(order=c(2, 1, 2), period=3), 
                  method="ML")
 summary(prcp.m2)
 cherry.ja[cherry.ja$year==2005,"PRCP"] <- as.vector(predict(prcp.m2, n.ahead=1)$pred)
@@ -621,12 +653,12 @@ plot(tyme2, cherry.ja.sub$TAVG, type="l")
 ts.tavg <- ts(cherry.ja.sub$TAVG)
 
 tavg.m1 <- Arima(ts.tavg, order = c(0, 1, 1), seasonal = list(order=c(0, 1, 1), period=8), 
-                 method="ML", include.drift=TRUE)
+                 method="ML")
 checkresiduals(tavg.m1)
 summary(tavg.m1)
 
 tavg.m2 <- Arima(ts.tavg[1:52], order = c(0, 1, 1), seasonal = list(order=c(0, 1, 1), period=8), 
-                 method="ML", include.drift=TRUE)
+                 method="ML")
 summary(tavg.m2)
 
 # predicted value
@@ -654,8 +686,6 @@ summary(gdd.m2)
 cherry.ja[cherry.ja$year==2005, "GDD"] <- cherry.ja.sub[cherry.ja.sub$year==2005, "GDD"] <- 
   predict(gdd.m2, n.ahead=1)$pred[1] + predict(gdd.m2, n.ahead=1)$pred[2]
 
-
-cherry.ja.sub <- cherry.ja.sub[,-8]
 
 
 
@@ -734,6 +764,8 @@ plot(ja.lm3)
 acf2(resid(ja.lm3))
 acf2(resid(ja.lm3)^2)
 durbinWatsonTest(ja.lm3)
+durbinWatsonTest(ja.lm3)
+
 
 
 # Linear model with ARIMA adjusted errors
@@ -742,8 +774,7 @@ cherry.ja.sub <- cherry.ja[cherry.ja$year >= 1953,
                            c("year", "sun.mar", "sun.maysep", "WDSP", "SLP", "PRCP", "TAVG", 
                              "TempDiffAbs", "heat.days", "chill.days", "GDD", "PBD", "pos.sun", 
                              "sun.time", "slap", "precip")]
-{
-attach(cherry.ja)
+{attach(cherry.ja)
 par(mfrow=c(1,1))
 tyme <- seq(from=1900, to=2021, by=1)
 plot(tyme, PBD, type="l")
@@ -799,18 +830,13 @@ cbind("Regression Errors" = residuals(ja.arima.auto, type="regression"),
 checkresiduals(ja.arima.auto)
 # AR(2) model residuals don't quite approximate white noise, are approximately normally distributed, and the acf residual plot does not look great
 
-bestaic <- 100000
-bestmdl <- NULL
-for(a in 0:5) for(b in 0:5) for(c in 0:5) for(d in 0:5) for(e in 1:10) for(f in 0:2) for(g in 0:2){
 
-  ja.arima <- Arima(ja.pbd.ts, order = c(a, f, b), seasonal = list(order=c(c, g, d), period=e), 
-                   method="ML", include.drift=FALSE,
-                   xreg=cbind(t_avg, chill, gdd, sun_t, ts.slp) )
-  
-  if (ja.arima$aic < bestaic) 
-        {bestmdl <- ja.arima
-         bestaic <- ja.arima$aic}
-}
+############################################################
+############################################################
+# Run Code Here from optimize_arima.R to Replicate Results
+############################################################
+############################################################
+
 checkresiduals(bestmdl)
 summary(bestmdl)
 
@@ -825,8 +851,17 @@ summary(ja.arima)
 ja.arima.auto$aic
 bestmdl$aic
 ja.arima$aic
+
+# residuals plots
+df1 <- data.frame(fitted=fitted(ja.arima), residuals=residuals(ja.arima))
+ggplot(df1, aes(x=fitted, y=residuals)) +
+  geom_point() 
+qqPlot(residuals(ja.arima))
+
 # final arima model is
 summary(ja.arima)
+ja.arima$arma
+checkresiduals(ja.arima)
 
 
 # Forecast
@@ -835,10 +870,11 @@ summary(ja.arima)
 ja.arima.pred <- as.data.frame(forecast(ja.arima, xreg=cbind(t_avg, chill, gdd, sun_t, ts.slp)))[1:11,1]
 
 fitjanomis <- as.vector(na_remove(ja.arima$fitted))
-rmse(cherry.ja$PBD[c(53:72,74:89,91:122)],fitjanomis) #RMSE
+rmse(cherry.ja$PBD[c(54:73,75:90,92:122)],fitjanomis) #RMSE
 
 # Final unadjusted forecasted DOYs for 2022-2032 are:
 ja.final.pred <- ja.arima.pred - 7*(1-(0.8*(1/0.7)))
+ja.pred.tbl <- data.frame(year=yr.f, ja.final.pred)
 
 # forecast date for 2022: 
 as.Date(ja.final.pred[1], origin="2022-01-01")
@@ -945,8 +981,8 @@ AIC(sw.r1, sw.r2) # sw.r2 has the lowest AIC for 1931-2021 data
 AIC(sw.r3, sw.r4) # sw.r3 has the lowest AIC for 1954-2021 data
 
 # Compare models sw.r2 and sw.r3
-rmse(cherry.sw$PBD, sw.r2$fitted.values)
-rmse(cherry.sw$PBD, sw.r3$fitted.values)
+rmse(cherry.sw.sub$PBD, sw.r2$fitted.values)
+rmse(cherry.sw.sub[!is.na(cherry.sw.sub$chill.days),"PBD"], sw.r3$fitted.values)
 # sw.r3 has the lower RMSE so we proceed with model sw.r3
 
 # sw.r3 consistent with most complex model
@@ -958,6 +994,7 @@ vif(sw.r3)
 plot(sw.r3)
 acf2(resid(sw.r3))
 acf2(resid(sw.r3)^2)
+durbinWatsonTest(sw.r3)
 durbinWatsonTest(sw.r3)
 
 {attach(cherry.sw)
@@ -1003,19 +1040,14 @@ checkresiduals(sw.auto.arima)
 sw.auto.arima$arma
 summary(sw.auto.arima)
 
+
+
+############################################################
+############################################################
+# Run Code Here from optimize_arima.R to Replicate Results
+############################################################
+############################################################
 # loop through models to find best possible model
-bestaic <- 100000
-bestmdl <- NULL
-for(a in 0:6) for(b in 0:5) for(c in 0:6) for(d in 0:5) for(e in 1:8) for(f in 0:2) for(g in 0:2){
-  
-  sw.arima <- Arima(sw.pbd.ts, order = c(a, f, b), seasonal = list(order=c(c, g, d), period=e), 
-                    method="ML", include.drift=FALSE,
-                    xreg=cbind(sun_ms, tempdif, gdd, t_avg, chill) )
-  
-  if (sw.arima$aic < bestaic) 
-  {bestmdl <- sw.arima
-  bestaic <- sw.arima$aic}
-}
 checkresiduals(bestmdl)
 summary(bestmdl)
 bestmdl$arma
@@ -1035,17 +1067,12 @@ checkresiduals(sw.auto.arima2)
 sw.auto.arima2$arma
 summary(sw.auto.arima2)
 
-bestaic2 <- 100000
-bestmdl2 <- NULL
-for(a in 0:6) for(b in 0:5) for(c in 0:6) for(d in 0:5) for(e in 1:8) for(f in 0:2) for(g in 0:2){
-  
-  sw.arima3 <- Arima(sw.pbd.ts, order = c(a, f, b), seasonal = list(order=c(c, g, d), period=e), 
-                    method="ML", include.drift=FALSE )
-  
-  if (sw.arima3$aic < bestaic2) 
-  {bestmdl2 <- sw.arima
-  bestaic2 <- sw.arima$aic}
-}
+
+############################################################
+############################################################
+# Run Code Here from optimize_arima.R to Replicate Results
+############################################################
+############################################################
 checkresiduals(bestmdl2)
 summary(bestmdl2)
 bestmdl2$arma
@@ -1064,7 +1091,6 @@ summary(sw.arima2)
 lm.c1 <- lm(Tavg ~ year + sun.maysep + sun.mar + PRCP + SNWD + TempDiffAbs + chill.days + heat.days + GDD
             , data=cherry.sw.sub2)
 summary(lm.c1)
-plot(lm.c1)
 
 lm.s1 <- auto.arima(t_avg, max.p=5, max.d=5, max.q=5, max.P=5, max.D=5, max.Q=5, 
                     seasonal=TRUE, method="ML",
@@ -1081,7 +1107,6 @@ Tavg.futs <- as.data.frame(forecast(lm.s1, xreg=cbind(sun.mar, sun_ms, snow, prc
 lm.c2 <- lm(TempDiffAbs ~ year + sun.maysep + sun.mar + PRCP + SNWD + Tavg + chill.days + heat.days + GDD
             , data=cherry.sw.sub2)
 summary(lm.c2)
-plot(lm.c2)
 
 lm.s2 <- auto.arima(tempdif, max.p=5, max.d=5, max.q=5, max.P=5, max.D=5, max.Q=5, 
                     seasonal=TRUE, method="ML",
@@ -1090,14 +1115,13 @@ summary(lm.s2)
 lm.s2$arma
 checkresiduals(lm.s2)
 TempDiffAbs.futs <- as.data.frame(forecast(lm.s2, 
-                                          xreg=cbind(sun.mar, sun_ms, snow, prcp, tempdif, chill, 
-                                                     heating, gdd)))[1:11, 1]
+                                          xreg=cbind(sun.mar, sun_ms, snow, prcp, t_avg, chill, heating, gdd)))[1:11, 1]
+
 # chill.days
 #################
 lm.c6 <- lm(chill.days ~ year + sun.maysep + sun.mar + PRCP + SNWD + TempDiffAbs + Tavg + heat.days + GDD
             , data=cherry.sw.sub2)
 summary(lm.c6)
-plot(lm.c6)
 acf2(resid(lm.c6))
 
 lm.s6 <- auto.arima(chill, max.p=5, max.d=5, max.q=5, max.P=5, max.D=5, max.Q=5, 
@@ -1115,7 +1139,6 @@ chill.days.futs <- as.data.frame(forecast(lm.s6, xreg=cbind(sun.mar, sun_ms, sno
 lm.c7 <- lm(GDD ~ year + sun.maysep + sun.mar + PRCP + SNWD + TempDiffAbs + Tavg + heat.days + chill.days
             , data=cherry.sw.sub2)
 summary(lm.c7)
-plot(lm.c7)
 acf2(resid(lm.c7))
 
 lm.s7 <- auto.arima(gdd, max.p=5, max.d=5, max.q=5, max.P=5, max.D=5, max.Q=5, 
@@ -1156,6 +1179,12 @@ futs.data <- data.frame(year=yr.futs, sun.maysep=sw.sunms.fut, TempDiffAbs=TempD
 # projections from sw.r3
 sw.r3.pred <- predict(sw.r3, newdata=futs.data)
 
+
+sw.pbd.ts3 <- ts(sw.pbd.ts, frequency=5)
+sw.r3n <- tslm(sw.pbd.ts3 ~ trend + season)
+summary(sw.r3n)
+plot(forecast(sw.r3n))
+
 # predictions from PBD time series without covariates
 sw.arima2.pred <- predict(sw.arima2, n.ahead=11)
 forecast(sw.arima2, h=11)
@@ -1167,9 +1196,9 @@ forecast(sw.auto.arima3, xreg=cbind(sun_ms2, tempdif2, gdd2, t_avg2))
 rmse(cherry.sw[cherry.sw$year>=1954, "PBD"][-c(62:63)], sw.auto.arima$fitted[-c(62:63)]) 
 rmse(cherry.sw[cherry.sw$year>=1954, "PBD"][-c(62:63)], bestmdl$fitted[-c(62:63)]) 
 rmse(cherry.sw[cherry.sw$year>=1954, "PBD"][-c(62:63)], sw.arima$fitted[-c(62:63)])
-rmse(cherry.sw[cherry.sw$year>=1954, "PBD"], sw.r3$fitted.values)
+rmse(cherry.sw[cherry.sw$year>=1954 & !is.na(cherry.sw$chill.days), "PBD"], sw.r3$fitted.values)
 rmse(cherry.sw[cherry.sw$year>=1954, "PBD"], sw.arima2$fitted)
-rmse(cherry.sw[cherry.sw$year>=1932, "PBD"], sw.auto.arima3$fitted)
+rmse(cherry.sw[cherry.sw$year>=1931, "PBD"], sw.auto.arima3$fitted)
 # sw.arima2 has the lowest RMSE but does not yield sensible forecasts and high variablity in errors at end of time series. sw.arima is the best balanced model
 
 # final SARIMA model is
@@ -1201,44 +1230,315 @@ plot(tyme, cherry.sw$PBD, type="l")
 # Vancouver, Canada
 ############################################################################################
 ############################################################################################
-cherry.df <- cherry.dc[, c("year", "location", "lat", "long", "alt", "bloom_date", "bloom_doy", "PBD", "Adj.bloom.date", "hardiness.zone", "sun", "sun.maysep", "sun.mar", "WDSP", "SLP", "PRCP", "SNWD", "TMIN", "TMAX", "TAVG", "Tavg", "TempDiffAbs", "TempDiffSq", "ppd", "heat.days", "chill.days", "GDD")] %>% 
-  rbind(cherry.ja[, c("year", "location", "lat", "long", "alt", "bloom_date", "bloom_doy", "PBD", "Adj.bloom.date", "hardiness.zone", "sun", "sun.maysep", "sun.mar", "WDSP", "SLP", "PRCP", "SNWD", "TMIN", "TMAX", "TAVG", "Tavg", "TempDiffAbs", "TempDiffSq", "ppd", "heat.days", "chill.days", "GDD")]) %>% 
-  rbind(cherry.sw[, c("year", "location", "lat", "long", "alt", "bloom_date", "bloom_doy", "PBD", "Adj.bloom.date", "hardiness.zone", "sun", "sun.maysep", "sun.mar", "WDSP", "SLP", "PRCP", "SNWD", "TMIN", "TMAX", "TAVG", "Tavg", "TempDiffAbs", "TempDiffSq", "ppd", "heat.days", "chill.days", "GDD")]) 
+cherry.df <- cherry.dc[, c("year", "location", "lat", "long", "alt", "bloom_date", "bloom_doy", "PBD", "Adj.bloom.date", "hardiness.zone", "sun", "sun.maysep", "sun.mar", "WDSP", "SLP", "PRCP", "SNWD", "TMIN", "TMAX", "TAVG", "Tavg", "TempDiffAbs", "TempDiffSq", "ppd", "heat.days", "chill.days", "GDD", "tavg.m", "tmin.m", "tmax.m", "prcp.m", "gdd.m")] %>% 
+  rbind(cherry.ja[, c("year", "location", "lat", "long", "alt", "bloom_date", "bloom_doy", "PBD", "Adj.bloom.date", "hardiness.zone", "sun", "sun.maysep", "sun.mar", "WDSP", "SLP", "PRCP", "SNWD", "TMIN", "TMAX", "TAVG", "Tavg", "TempDiffAbs", "TempDiffSq", "ppd", "heat.days", "chill.days", "GDD", "tavg.m", "tmin.m", "tmax.m", "prcp.m", "gdd.m")]) %>% 
+  rbind(cherry.sw[, c("year", "location", "lat", "long", "alt", "bloom_date", "bloom_doy", "PBD", "Adj.bloom.date", "hardiness.zone", "sun", "sun.maysep", "sun.mar", "WDSP", "SLP", "PRCP", "SNWD", "TMIN", "TMAX", "TAVG", "Tavg", "TempDiffAbs", "TempDiffSq", "ppd", "heat.days", "chill.days", "GDD", "tavg.m", "tmin.m", "tmax.m", "prcp.m", "gdd.m")]) 
 
-cherry.df.sub <- cherry.df %>% 
-  select("location", "year", "sun.maysep", "sun.mar", "Tavg", "TempDiffAbs")
+cherry.df$hardiness.zone <- factor(cherry.df$hardiness.zone,
+                                   levels=c("7a", "7b", "9b"))
+levels(cherry.df$hardiness.zone)<- c("7a", "7b", "8a", "8b", "9a", "9b")
+cherry.df$hardiness.zone <- factor(cherry.df$hardiness.zone, ordered=TRUE,
+                                   levels=c("7a", "7b", "8a", "8b", "9a", "9b"))
 
+cherry.bc$hardiness.zone <- factor(cherry.bc$hardiness.zone,
+                                   levels=c("8b"))
+levels(cherry.bc$hardiness.zone)<- c("7a", "7b", "8a", "8b", "9a", "9b")
+cherry.bc$hardiness.zone <- factor(cherry.bc$hardiness.zone, ordered=TRUE,
+                                   levels=c("7a", "7b", "8a", "8b", "9a", "9b"))
+cherry.bc$hardiness.zone <- factor("8b", ordered=TRUE,
+                                   levels=c("7a", "7b", "8a", "8b", "9a", "9b"))
 
+# select observations since 1956
 cherry.df.s <- cherry.df[cherry.df$year >= 1956,]
 
-all.lm1 <- lm(PBD ~ lat + sun + sun.maysep + WDSP + SLP + PRCP + SNWD + Tavg + TempDiffSq + ppd + heat.days + chill.days + GDD, data=cherry.df ) 
-summary(all.lm1)
+summary(cherry.ja)
+summary(cherry.dc)
+summary(cherry.sw)
+
+
+# Most complex model
+all.m1 <- lm(PBD ~ lat + alt + hardiness.zone + location + sun.mar + sun.maysep + prcp.m + tavg.m + gdd.m, 
+             data=cherry.df, na.action=na.omit) 
+summary(all.m1)
 
 # Stepwise Regression
-step.lm4 <- step(lm1, direction = "backward")
+step.lm7 <- step(all.m1, direction = "backward")
 
-all.lm <- lm(PBD ~ Tavg + sun.maysep + sun + I(sun^2), data=cherry.df)
+all.m2 <- lm(PBD ~ gdd.m + alt + sun.mar + sun.maysep + prcp.m + lat + tavg.m, data=cherry.df)
+summary(all.m2)
+
+all.m3 <- lm(PBD ~ sun.maysep + prcp.m + lat + tavg.m, data=cherry.df)
+summary(all.m3)
+
+vif(all.m2) 
+
+all.m4 <- lm(PBD ~ gdd.m + alt + sun.mar + sun.maysep + prcp.m + tavg.m, data=cherry.df)
+summary(all.m4) #remove lat
+all.m5 <- lm(PBD ~ gdd.m + alt + prcp.m + lat + tavg.m, data=cherry.df)
+summary(all.m5) # remove sun.mar and sun.maysep
+AIC(all.m4, all.m5)
+# remove lat
+# go with all.m4
+
+
+# Stepwise Regression
+step.lm7 <- step(all.m4, direction = "backward")
+
+all.m6 <- lm(PBD ~ gdd.m + alt + sun.mar + sun.maysep + prcp.m + tavg.m, data=cherry.df)
+summary(all.m6)
+vif(all.m6) # high VIF; remove sun.mar
+
+
+all.m7 <- lm(PBD ~ gdd.m + alt + sun.maysep + prcp.m + tavg.m, data=cherry.df)
+summary(all.m7)
+
+# Stepwise Regression
+step.lm8 <- step(all.m7, direction = "backward")
+
+all.m8 <- lm(PBD ~ prcp.m + alt + sun.maysep +  tavg.m, data=cherry.df)
+summary(all.m8)
+vif(all.m8) # VIF high; remove alt
+
+all.m9 <- lm(PBD ~ prcp.m + alt + sun.maysep + tavg.m + gdd.m, data=cherry.df)
+summary(all.m9)
+vif(all.m9)
+
+
+all.m10 <- lm(PBD ~ prcp.m + sun.maysep + tavg.m + gdd.m, data=cherry.df)
+summary(all.m10)
+
+# Stepwise Regression
+step.lm9 <- step(all.m10, direction = "backward")
+
+
+all.lm <- lm(PBD ~ prcp.m + sun.maysep + tavg.m + gdd.m, data=cherry.df)
 summary(all.lm)
+
+all.lm1 <- lm(PBD ~ prcp.m + tavg.m + gdd.m , data=cherry.df)
+summary(all.lm1)
+vif(all.lm1)
+
+AIC(all.lm, all.lm1)
+anova(all.lm, all.lm1)
+
+# Diagnostics
+vif(all.lm)
+plot(all.lm)
+acf2(resid(all.lm))
+acf2(resid(all.lm)^2)
+durbinWatsonTest(all.lm)
+durbinWatsonTest(all.lm)
+
+
+# not working
+all.lm <- gls(PBD ~ prcp.m + sun.maysep + tavg.m + gdd.m, data=cherry.df,
+             correlation=corAR1(1, form= ~1 | location, p=2, q=1))
+summary(all.lm)
+acf2(resid(all.lm))
+
+
+
+cherry.df.sub <- cherry.df[, c("location", "PBD", "prcp.m", "tavg.m", "gdd.m", "hardiness.zone")] %>% 
+  filter(complete.cases(.))
+
+nrow(cherry.df.sub)
+nrow(cherry.df.sub[cherry.df.sub$location == "washingtondc", ])
+nrow(cherry.df.sub[cherry.df.sub$location == "kyoto", ])
+nrow(cherry.df.sub[cherry.df.sub$location == "liestal", ])
+
+# RMSE of all.lm1
+rmse(cherry.df.sub[cherry.df.sub$location == "washingtondc", "PBD"], all.lm1$fitted.values[1:66])
+rmse(cherry.df.sub[cherry.df.sub$location == "kyoto", "PBD"], all.lm1$fitted.values[67:136])
+rmse(cherry.df.sub[cherry.df.sub$location == "liestal", "PBD"], all.lm1$fitted.values[137:208])
+
+
+# Data for Vancouver
+vancouver.data <- cherry.bc[ ,c("year", "prcp.m", "tavg.m", "gdd.m")]
+
+# create time series
+bc.prcp <- ts(cherry.bc$prcp.m)
+bc.tavg <- ts(cherry.bc$tavg.m)
+bc.gdd <- ts(cherry.bc$gdd.m)
+bc.hz <- ts(cherry.bc$hardiness.zone)
+
+
+# predict prcp.m
+bc.prcp.fut <- auto.arima(bc.prcp, max.p=5, max.d=5, max.q=5, max.P=5, max.D=5, max.Q=5, 
+                          seasonal=TRUE, method="ML",
+                          xreg=cbind(bc.tavg, bc.gdd) )
+summary(bc.prcp.fut)
+bc.prcp.fut$arma
+bc.prcp.pred <- as.data.frame(forecast(bc.prcp.fut, xreg=cbind(bc.tavg, bc.gdd)))[1:11,1]
+
+
+# predict tavg.m
+bc.tavg.fut <- auto.arima(bc.tavg, max.p=5, max.d=5, max.q=5, max.P=5, max.D=5, max.Q=5, 
+                          seasonal=TRUE, method="ML",
+                          xreg=cbind(bc.prcp, bc.gdd) )
+summary(bc.tavg.fut)
+bc.tavg.fut$arma
+bc.tavg.pred <- as.data.frame(forecast(bc.tavg.fut, xreg=cbind(bc.prcp, bc.gdd)))[1:11,1]
+
+
+# predict gdd.m
+bc.gdd.fut <- auto.arima(bc.gdd, max.p=5, max.d=5, max.q=5, max.P=5, max.D=5, max.Q=5, 
+                          seasonal=TRUE, method="ML",
+                          xreg=cbind(bc.prcp, bc.tavg) )
+summary(bc.gdd.fut)
+bc.gdd.fut$arma
+bc.gdd.pred <- as.data.frame(forecast(bc.gdd.fut, xreg=cbind(bc.prcp, bc.tavg)))[1:11,1]
+
+
+yr.f <- seq(from=2022, to=2032, by=1)
+pred.covs <- data.frame(year=yr.f, prcp.m=bc.tavg.pred, tavg.m=bc.tavg.pred, gdd.m=bc.gdd.pred)
+vancouver.data <- rbind(vancouver.data, pred.covs)
+
+
+# Vancouver forecast for 2022-2032:
+predict.bc <- predict(all.lm1, newdata = pred.covs)
+
+predict.tbl <- data.frame(year=yr.f, vancouver_doy=predict.bc)
+
+
+
+
+
+# VAR Model
+#############################################################
+
+#################
+# Load Libraries
+#################
+library(tseries)
+library(vars)
+library(fpp2)
+library(MTS)
+
+
+# make time series for PBDs
+ts.pbd.ja <- ts(cherry.df.s[cherry.df.s$location=="kyoto", "PBD"])
+ts.pbd.dc <- ts(cherry.df.s[cherry.df.s$location=="washingtondc", "PBD"])
+ts.pbd.sw <- ts(cherry.df.s[cherry.df.s$location=="liestal", "PBD"])
+
+cor.df <- data.frame(ts.pbd.ja, ts.pbd.dc, ts.pbd.sw)
+cor(cor.df)
+
+# test for cointegration
+po.test(cbind(ts.pbd.ja, ts.pbd.dc, ts.pbd.sw))
+# strong evidence that the series are cointegrated so series are appropriate for modelling with VAR
+
+# test for stationarity
+adf.test(ts.pbd.ja)
+adf.test(ts.pbd.dc)
+adf.test(ts.pbd.sw)
+pp.test(ts.pbd.ja)
+pp.test(ts.pbd.dc)
+pp.test(ts.pbd.sw)
+# we can reject the null hypothesis that the series have unit roots.
+# PBDs are stationary series.
+# Use VAR in levels.
+
+zt <- data.frame(kyoto=cherry.ja[cherry.ja$year>=1954, "PBD"],
+                 washingtondc=cherry.dc[cherry.dc$year>=1954, "PBD"],
+                 liestal=cherry.sw[cherry.sw$year>=1954, "PBD"])
+
+cherry.var <- cherry.df[cherry.df$year >= 1954, ] %>% 
+  select(location, year, PBD, Tavg, GDD, hardiness.zone, sun.maysep)
+
+xt <- data.frame(GDD.ja=cherry.var[cherry.var$location=="kyoto", "GDD"],
+                 GDD.dc=cherry.var[cherry.var$location=="washingtondc", "GDD"],
+                 GDD.sw=cherry.var[cherry.var$location=="liestal", "GDD"])
+
+VARselect(as.matrix(zt, nrow=68))
+all.var <- VAR(as.matrix(zt, nrow=68), p=1)
+all.var$bic
+
+# forecast
+table1 <- as.data.frame(VARpred(all.var, h=11)[1])
+cities <- data.frame(year=yr.f, table1)
+vancouver.var.preds <- data.frame(year=yr.f, vancouver_doy=rowMeans(table1))
+vancouver.var.preds
+
+
+
+
+
+VARX(zt=zt, p=1, include.mean=T)
+
+
+length(cherry.var[cherry.var$location=="kyoto", "GDD"])
+length(cherry.var[cherry.var$location=="washingtondc", "GDD"])
+length(cherry.var[cherry.var$location=="liestal", "GDD"])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###########################################################################################
+
+
+
+# create time series
+ts.pbd.ja <- ts(cherry.df.s[cherry.df.s$location=="kyoto", "PBD"])
+ts.pbd.dc <- ts(cherry.df.s[cherry.df.s$location=="washingtondc", "PBD"])
+ts.pbd.sw <- ts(cherry.df.s[cherry.df.s$location=="liestal", "PBD"])
+
+ts.prcp.ja <- ts(cherry.df.s[cherry.df.s$location=="kyoto", "prcp.m"])
+ts.prcp.dc <- ts(cherry.df.s[cherry.df.s$location=="washingtondc", "prcp.m"])
+ts.prcp.sw <- ts(cherry.df.s[cherry.df.s$location=="liestal", "prcp.m"])
+
+ts.tavg.ja <- ts(cherry.df.s[cherry.df.s$location=="kyoto", "tavg.m"])
+ts.tavg.dc <- ts(cherry.df.s[cherry.df.s$location=="washingtondc", "tavg.m"])
+ts.tavg.sw <- ts(cherry.df.s[cherry.df.s$location=="liestal", "tavg.m"])
+
+ts.sun.ja <- ts(cherry.df.s[cherry.df.s$location=="kyoto", "sun"])
+ts.sun.dc <- ts(cherry.df.s[cherry.df.s$location=="washingtondc", "sun"])
+ts.sun.dc <- ts(cherry.df.s[cherry.df.s$location=="liestal", "sun"])
+
+
+
+all.lm1 <- lm(PBD ~ Tavg + GDD + hardiness.zone, data=cherry.df)
+summary(all.lm1)
+
+all.lm2 <- lm(PBD ~ Tavg + GDD + hardiness.zone + sun.maysep, data=cherry.df)
+summary(all.lm2)
+
+all.lm3 <- lm(PBD ~ Tavg + GDD + hardiness.zone + sun.maysep + chill.days, data=cherry.df)
+summary(all.lm3)
+
+AIC(all.lm, all.lm1, all.lm2)
+# all.lm2 has the lowest AIC and has a higher R-squared than all.lm3
+# all.lm3 has fewer observations.
+# Thus, all.lm2 is our provisional linear model
+
+
+
+
+
+
+
+
+
 
 acf2(resid(all.lm))
 vif(all.lm)
 plot(all.lm)
 
-ts.pbd.ja <- ts(cherry.df.s[cherry.df.s$location=="kyoto", "PBD"])
-ts.pbd.dc <- ts(cherry.df.s[cherry.df.s$location=="washingtondc", "PBD"])
-ts.pbd.sw <- ts(cherry.df.s[cherry.df.s$location=="liestal", "PBD"])
 
-ts.tavg.ja <- ts(cherry.df.s[cherry.df.s$location=="kyoto", "Tavg"])
-ts.tavg.dc <- ts(cherry.df.s[cherry.df.s$location=="washingtondc", "Tavg"])
-ts.tavg.sw <- ts(cherry.df.s[cherry.df.s$location=="liestal", "Tavg"])
 
-ts.suns.ja <- ts(cherry.df.s[cherry.df.s$location=="kyoto", "sun.maysep"])
-ts.suns.dc <- ts(cherry.df.s[cherry.df.s$location=="washingtondc", "sun.maysep"])
-ts.suns.sw <- ts(cherry.df.s[cherry.df.s$location=="liestal", "sun.maysep"])
-
-ts.sun.ja <- ts(cherry.df.s[cherry.df.s$location=="kyoto", "sun"])
-ts.sun.dc <- ts(cherry.df.s[cherry.df.s$location=="washingtondc", "sun"])
-ts.sun.dc <- ts(cherry.df.s[cherry.df.s$location=="liestal", "sun"])
 
 
 library(vars)

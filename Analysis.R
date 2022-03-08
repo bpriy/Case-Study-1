@@ -36,11 +36,14 @@ library(itsadug)
 library(tidyverse)
 library(modelr)
 library(Metrics)
-library(pROC)
 library(FSA)
+library(seasonal)
+library(fpp2)
+library(zoo)
+library(imputeTS)
 
-
-
+as.Date <- base::as.Date
+view <- tibble::view
 select <- dplyr::select
 ##########################################
 ## Import Response Variable      
@@ -98,6 +101,7 @@ pbd.dc <- data.frame(year = cherry.dc$year, bloom.date = cherry.dc$bloom_date, b
 
 7*(1-(0.8*(1/0.7)))
 7*(1-(0.25*(1/0.7)))
+(1-(0.25*(1/0.7)))*7 - 0.5
 
 cherry.ja$PBD <- pbd.ja[,4]
 cherry.dc$PBD <- pbd.dc[,3]
@@ -272,6 +276,21 @@ for(j in 1:length(sunyear_start)) {
 }
 cherry.sw$sun.maysep <- sunhr.sw
 cherry.sw$sun.maysep <- cherry.sw$sun.maysep / 153 / 60
+
+
+# Vancouver : May-Sep
+sunhr.bc <- NA
+sunyear_start <- seq(from=as.Date("1936-05-01"), to=as.Date("2020-05-01"), by="year")
+sunyear_end <- seq(from=as.Date("1936-09-30"), to=as.Date("2020-09-30"), by="year")
+for(j in 1:length(sunyear_start)) {
+  sunlist.bc <- sun_bc %>% 
+    filter(date >= sunyear_start[j] & date <= sunyear_end[j]) %>% 
+    select(sunlight_duration) 
+  
+  sunhr.bc[j] <- sum(sunlist.bc) 
+}
+cherry.bc$sun.maysep <- sunhr.bc
+cherry.bc$sun.maysep <- cherry.bc$sun.maysep / 153 / 60
 
 
 
@@ -539,6 +558,116 @@ liestal.gsod <- basel2
 liestal.ghcn <- basel1
 
 
+
+# Vancouver
+######################################################################################
+######################################################################################
+# Station: CA001108473 (1937-2013)
+van.ghcn <- read.csv("data/vancouver_airport, ghcn.csv", header=TRUE)
+van.ghcn$DATE <- as.Date(van.ghcn$DATE, format="%m/%d/%Y")
+van.ghcn <- van.ghcn %>% separate(col=DATE, into=c("year", "month", "day"), remove=FALSE)
+van.ghcn$year <- as.integer(van.ghcn$year)
+van.ghcn$month <- as.integer(van.ghcn$month)
+van.ghcn$day <- as.integer(van.ghcn$day)
+
+van.ghcn$PRCP <- as.numeric(van.ghcn$PRCP)
+van.ghcn$SNOW <- as.numeric(van.ghcn$SNOW)
+van.ghcn$SNWD <- as.numeric(van.ghcn$SNWD)
+van.ghcn$TMAX <- as.numeric(van.ghcn$TMAX)
+van.ghcn$TMIN <- as.numeric(van.ghcn$TMIN)
+van.ghcn$MDPR <- as.numeric(van.ghcn$MDPR)
+
+van.ghcn$TMIN <- van.ghcn$TMIN / 10
+van.ghcn$TMAX <- van.ghcn$TMAX / 10
+
+
+# Station: CA001108395 (2014-2015)
+van2.ghcn <- read.csv("data/vancouver_airport2, ghcn.csv", header=TRUE)
+van2.ghcn$DATE <- as.Date(van2.ghcn$DATE)
+van2.ghcn <- van2.ghcn %>% separate(col=DATE, into=c("year", "month", "day"), remove=FALSE)
+van2.ghcn$year <- as.integer(van2.ghcn$year)
+van2.ghcn$month <- as.integer(van2.ghcn$month)
+van2.ghcn$day <- as.integer(van2.ghcn$day)
+
+van2.ghcn$PRCP <- as.numeric(van2.ghcn$PRCP)
+van2.ghcn$SNOW <- as.numeric(van2.ghcn$SNOW)
+van2.ghcn$SNWD <- as.numeric(van2.ghcn$SNWD)
+van2.ghcn$TMAX <- as.numeric(van2.ghcn$TMAX)
+van2.ghcn$TMIN <- as.numeric(van2.ghcn$TMIN)
+van2.ghcn$TAVG <- as.numeric(van2.ghcn$TAVG)
+van2.ghcn$WDFG <- as.numeric(van2.ghcn$WDFG)
+van2.ghcn$WSFG <- as.numeric(van2.ghcn$WSFG)
+
+van2.ghcn$TMIN <- van2.ghcn$TMIN / 10
+van2.ghcn$TMAX <- van2.ghcn$TMAX / 10
+van2.ghcn$TAVG <- van2.ghcn$TAVG / 10
+
+
+#Station: CA001108380 (2016-2021)
+van3.ghcn <- read.csv("data/vancouver_sea_island, ghcn.csv", header=TRUE)
+van3.ghcn$DATE <- as.Date(van3.ghcn$DATE)
+van3.ghcn <- van3.ghcn %>% separate(col=DATE, into=c("year", "month", "day"), remove=FALSE)
+van3.ghcn$year <- as.integer(van3.ghcn$year)
+van3.ghcn$month <- as.integer(van3.ghcn$month)
+van3.ghcn$day <- as.integer(van3.ghcn$day)
+
+van3.ghcn$PRCP <- as.numeric(van3.ghcn$PRCP)
+van3.ghcn$TMAX <- as.numeric(van3.ghcn$TMAX)
+van3.ghcn$TMIN <- as.numeric(van3.ghcn$TMIN)
+van3.ghcn$TAVG <- as.numeric(van3.ghcn$TAVG)
+van3.ghcn$WSFG <- as.numeric(van3.ghcn$WSFG)
+
+van3.ghcn$TMIN <- van3.ghcn$TMIN / 10
+van3.ghcn$TMAX <- van3.ghcn$TMAX / 10
+van3.ghcn$TAVG <- van3.ghcn$TAVG / 10
+
+
+summary(van.ghcn)
+summary(van2.ghcn)
+summary(van3.ghcn)
+summary(van2.ghcn[van2.ghcn$DATE >= as.Date("2013-06-12"), ])
+
+van.ghcn$TAVG <- NA
+van.ghcn$TAVG_ATTRIBUTES <- NA
+van.ghcn$WDFG <- NA
+van.ghcn$WDFG_ATTRIBUTES <- NA
+van.ghcn$WSFG <- NA
+van.ghcn$WSFG_ATTRIBUTES <- NA
+
+van2.ghcn$MDPR <- NA
+van2.ghcn$MDPR_ATTRIBUTES <- NA
+
+van.ghcn <- van.ghcn[,c("STATION", "DATE", "year", "month", "day", "LATITUDE", "LONGITUDE", "ELEVATION", "NAME", 
+                        "PRCP", "PRCP_ATTRIBUTES", "SNOW", "SNOW_ATTRIBUTES", "SNWD", "SNWD_ATTRIBUTES", "TMAX", 
+                        "TMAX_ATTRIBUTES", "TMIN", "TMIN_ATTRIBUTES", "TAVG", "TAVG_ATTRIBUTES", "WDFG", 
+                        "WDFG_ATTRIBUTES", "WSFG", "WSFG_ATTRIBUTES", "MDPR", "MDPR_ATTRIBUTES")]
+
+
+vanc.ghcn <- van.ghcn %>% 
+  rbind(van2.ghcn[van2.ghcn$DATE > as.Date("2013-06-12"), ])
+
+
+yvec <- data.frame(DATE = seq.Date(from=as.Date("1937-01-01"), to=as.Date("2022-03-01"), by="day"))
+vanc.ghcn <- merge(vanc.ghcn, yvec, by="DATE", all=TRUE)
+van3.ghcn <- merge(van3.ghcn, yvec, by="DATE", all=TRUE)
+
+vanc.ghcn <- vanc.ghcn %>% separate(col=DATE, into=c("year", "month", "day"), remove=FALSE)
+vanc.ghcn$year <- as.integer(vanc.ghcn$year)
+vanc.ghcn$month <- as.integer(vanc.ghcn$month)
+vanc.ghcn$day <- as.integer(vanc.ghcn$day)
+
+summary(vanc.ghcn[vanc.ghcn$DATE > as.Date("2013-06-12"),])
+summary(van3.ghcn[van3.ghcn$DATE > as.Date("2013-06-12"),])
+
+
+cherry.bc <- data.frame(year = c(seq(from=1937, to=2021, by=1)),
+                        location = c(rep("vancouver", 85)),
+                        lat = c(rep(49.2237, 85)),
+                        long = c(rep(-123.1636, 85)),
+                        alt = c(rep(24, 85)) )
+
+
+
 # GSOD
 # WDSP, SLP
 #####################
@@ -546,8 +675,7 @@ summary(kyoto.gsod)
 summary(dc.gsod)
 summary(liestal.gsod)
 
-library(zoo)
-as.Date <- base::as.Date
+
 
 # Kyoto
 yr <- seq(from=1900, to=2022, by=1)
@@ -653,6 +781,7 @@ cherry.sw$SLP <- gsod.sw[1:122,5] / bd.sw / 10
 summary(kyoto.ghcn)
 summary(dc.ghcn)
 summary(liestal.ghcn)
+summary(van.ghcn)
 
 
 # Kyoto
@@ -691,6 +820,51 @@ cherry.ja$TAVG <- ghcn.ja[,5]
 
 
 
+# tavg.m : JAN-APR
+yr <- seq(from=1900, to=2021, by=1)
+ghcn.ja <- data.frame(yr, c(rep(NA, 122)), c(rep(NA, 122)), c(rep(NA, 122)), c(rep(NA, 122)), c(rep(NA, 122)) )
+stor <- list(NULL)
+
+for(i in 1:72) for(m in 3:6) {
+  stor[[i]] <- kyoto.ghcn %>% 
+    filter(DATE >= as.Date(paste(yr[i+50], "01-01", sep="-")) & DATE <= as.Date(paste(yr[i+50], "04-15", sep="-")) ) %>% 
+    select(year, TMIN, TMAX, TAVG, PRCP, DATE) 
+  yvec <- data.frame(DATE = seq.Date(from=as.Date(paste(yr[i+50],"01-01",sep="-")), 
+                                     to=as.Date(paste(yr[i+50],"04-15",sep="-")), by="day"))
+  stor[[i]] <- merge(stor[[i]], yvec, by="DATE", all=T)
+  
+  ifelse(nrow(stor[[i]]) > 1,
+         ifelse(sum(is.na(stor[[i]][,m])) > 0.10*nrow(stor[[i]]),  
+                ghcn.ja[i+50,m] <- NA,
+                ifelse(is.na(stor[[i]][nrow(stor[[i]]),m]) | is.na(stor[[i]][1,m]), 
+                       {stor[[i]][nrow(stor[[i]]),m] <- mean(stor[[i]][94:104,m], na.rm=T)
+                       stor[[i]][1,m] <- mean(stor[[i]][2:12,m], na.rm=T)
+                       stor[[i]][,m] <- na.approx(stor[[i]][,m]) 
+                       ghcn.ja[i+50,m] <- sum(stor[[i]][,m])}, 
+                       {stor[[i]][,m] <- na.approx(stor[[i]][,m]) 
+                       ghcn.ja[i+50,m] <- sum(stor[[i]][,m])})  ),
+         {ghcn.ja[i+50,2] <- NA
+         ghcn.ja[i+50,3] <- NA
+         ghcn.ja[i+50,4] <- NA
+         ghcn.ja[i+50,5] <- NA
+         ghcn.ja[i+50,6] <- NA})
+  
+  ifelse(!is.na(ghcn.ja[i+50,5]),
+         ghcn.ja[i+50,5] <- ghcn.ja[i+50,5],
+         {ifelse(!is.na(ghcn.ja[i+50,3]) & !is.na(ghcn.ja[i+50,4]),
+                ghcn.ja[i+50,5] <- ((ghcn.ja[i+50,3] + ghcn.ja[i+50,4]) / 2),
+                ghcn.ja[i+50,5] <- NA )}  )
+}
+
+ghcn.ja[106,5] <- as.vector(predict(auto.arima(ts(ghcn.ja[52:106,5]), max.p=5, max.d=5, max.q=5, max.P=5, max.D=5, max.Q=5, 
+                                               seasonal=TRUE, method="ML"), n.ahead=1)$pred)
+
+cherry.ja$tmin.m <- ghcn.ja[,3]
+cherry.ja$tmax.m <- ghcn.ja[,4]
+cherry.ja$tavg.m <- ghcn.ja[,5]
+
+
+
 # PRCP, SNWD
 yr <- seq(from=1900, to=2021, by=1)
 ghcn.ja <- data.frame(yr, c(rep(NA, 122)), c(rep(NA, 122)), c(rep(NA, 122)) )
@@ -718,8 +892,12 @@ for(i in 1:72) for(j in 1:365)  {
 }  
 for (i in 1:72) for(k in 3:4) {ghcn.ja[i+50,k] <- sum(stor[[i]][1:bd.ja[i+50],k])}
 
+cherry.ja$PRCP <- ghcn.ja[,3]
+cherry.ja$SNWD <- ghcn.ja[,4]
 
 
+
+# Kyoto monthly data
 yr <- seq(from=1900, to=2021, by=1)
 month.ja <- data.frame(yr, mpct.pos.sun=c(rep(NA, 122)), t.sun.time=c(rep(NA, 122)), 
                        msealevel.ap=c(rep(NA, 122)), t.snwdp=c(rep(NA, 122)), t.precip=c(rep(NA, 122)) )
@@ -766,6 +944,7 @@ cherry.ja$pos.sun <- month.ja[,"mpct.pos.sun"]
 cherry.ja$sun.time <- month.ja[,"t.sun.time"]
 cherry.ja$slap <- month.ja[,"msealevel.ap"]
 cherry.ja$precip <- month.ja[,"t.precip"]
+cherry.ja$prcp.m <- cherry.ja$precip
 
 
 # Temp Diff
@@ -778,17 +957,15 @@ cherry.ja$Tavg <- (cherry.ja[,"TMAX"] + cherry.ja[,"TMIN"]) / 2
 
 
 # Washington, DC
-dc.ghcn$Tavg <- (dc.ghcn$TMAX + dc.ghcn$TMIN) / 2
-
 yr1 <- seq(from=1921, to=2021, by=1)
 ghcn.dc <- data.frame(yr1, c(rep(NA, 101)), c(rep(NA, 101)), c(rep(NA, 101)), c(rep(NA, 101)),
-                      c(rep(NA, 101)), c(rep(NA, 101)), c(rep(NA, 101)), c(rep(NA, 101)) )
+                      c(rep(NA, 101)), c(rep(NA, 101)), c(rep(NA, 101)) )
 stor <- list(NULL)
 
-for(i in 1:66) for(m in 3:9) {
+for(i in 1:66) for(m in 3:8) {
   stor[[i]] <- dc.ghcn %>% 
     filter(year == yr1[i+35]) %>% 
-    select(year, PRCP, SNWD, TMIN, TMAX, TAVG, PSUN, Tavg, DATE) 
+    select(year, PRCP, SNWD, TMIN, TMAX, TAVG, PSUN, DATE) 
   yvec <- data.frame(DATE = seq.Date(from=as.Date(paste(yr1[i+35],"01-01",sep="-")), to=as.Date(paste(yr1[i+35],"12-31",sep="-")), by="day"))
   stor[[i]] <- merge(stor[[i]], yvec, by="DATE", all=T)
   
@@ -819,7 +996,6 @@ cherry.dc$TMIN <- ghcn.dc[,5]
 cherry.dc$TMAX <- ghcn.dc[,6]
 cherry.dc$TAVG <- ghcn.dc[,7]
 cherry.dc$PSUN <- ghcn.dc[,8] / bd.dc
-cherry.dc$Tavg <- ghcn.dc[,9] / bd.dc
 
 
 # Temp Diff
@@ -827,6 +1003,47 @@ cherry.dc$TempDiffAbs <- abs(cherry.dc[,"TMAX"] - cherry.dc[,"TMIN"]) / 10
 cherry.dc$TempDiffSq <- (cherry.dc[,"TMAX"] - cherry.dc[,"TMIN"])^2 / 1000
 cherry.dc$Tavg <- (cherry.dc[,"TMAX"] + cherry.dc[,"TMIN"]) / 2
 
+
+
+# tavg.m : JAN-APR
+yr <- seq(from=1921, to=2021, by=1)
+ghcn.dc <- data.frame(yr, c(rep(NA, 101)), c(rep(NA, 101)), c(rep(NA, 101)), c(rep(NA, 101)), c(rep(NA, 101)) )
+stor <- list(NULL)
+
+for(i in 1:66) for(m in 3:6) {
+  stor[[i]] <- dc.ghcn %>% 
+    filter(DATE >= as.Date(paste(yr[i+35], "01-01", sep="-")) & DATE <= as.Date(paste(yr[i+35], "04-15", sep="-")) ) %>% 
+    select(year, TMIN, TMAX, TAVG, PRCP, DATE) 
+  yvec <- data.frame(DATE = seq.Date(from=as.Date(paste(yr[i+35],"01-01",sep="-")), 
+                                     to=as.Date(paste(yr[i+35],"04-15",sep="-")), by="day"))
+  stor[[i]] <- merge(stor[[i]], yvec, by="DATE", all=T)
+  
+  ifelse(nrow(stor[[i]]) > 1,
+         ifelse(sum(is.na(stor[[i]][,m])) > 0.10*nrow(stor[[i]]),  
+                ghcn.dc[i+35,m] <- NA,
+                ifelse(is.na(stor[[i]][nrow(stor[[i]]),m]) | is.na(stor[[i]][1,m]), 
+                       {stor[[i]][nrow(stor[[i]]),m] <- mean(stor[[i]][94:104,m], na.rm=T)
+                       stor[[i]][1,m] <- mean(stor[[i]][2:12,m], na.rm=T)
+                       stor[[i]][,m] <- na.approx(stor[[i]][,m]) 
+                       ghcn.dc[i+35,m] <- sum(stor[[i]][,m])}, 
+                       {stor[[i]][,m] <- na.approx(stor[[i]][,m]) 
+                       ghcn.dc[i+35,m] <- sum(stor[[i]][,m])})  ),
+         {ghcn.dc[i+35,2] <- NA
+         ghcn.dc[i+35,3] <- NA
+         ghcn.dc[i+35,4] <- NA
+         ghcn.dc[i+35,5] <- NA})
+  
+  ifelse(!is.na(ghcn.dc[i+35,5]),
+         ghcn.dc[i+35,5] <- ghcn.dc[i+35,5],
+         {ifelse(!is.na(ghcn.dc[i+35,3]) & !is.na(ghcn.dc[i+35,4]),
+                 ghcn.dc[i+35,5] <- ((ghcn.dc[i+35,3] + ghcn.dc[i+35,4]) / 2),
+                 ghcn.dc[i+35,5] <- NA )}  )
+}
+
+cherry.dc$tmin.m <- ghcn.dc[,3]
+cherry.dc$tmax.m <- ghcn.dc[,4]
+cherry.dc$tavg.m <- ghcn.dc[,5]
+cherry.dc$prcp.m <- ghcn.dc[,6]
 
 
 
@@ -869,7 +1086,211 @@ cherry.sw$TempDiffAbs <- abs(cherry.sw[,"TMAX"] - cherry.sw[,"TMIN"]) / 10
 cherry.sw$TempDiffSq <- (cherry.sw[,"TMAX"] - cherry.sw[,"TMIN"])^2 / 1000
 cherry.sw$Tavg <- (cherry.sw[,"TMAX"] + cherry.sw[,"TMIN"]) / 2
 
-detach("package:zoo", unload=TRUE)
+
+# tavg.m : JAN-APR
+yr <- seq(from=1900, to=2021, by=1)
+ghcn.sw <- data.frame(yr, c(rep(NA, 122)), c(rep(NA, 122)), c(rep(NA, 122)), c(rep(NA, 122)), c(rep(NA, 122)) )
+stor <- list(NULL)
+
+for(i in 1:72) for(m in 3:6) {
+  stor[[i]] <- liestal.ghcn %>% 
+    filter(DATE >= as.Date(paste(yr[i+50], "01-01", sep="-")) & DATE <= as.Date(paste(yr[i+50], "04-15", sep="-")) ) %>% 
+    select(year, TMIN, TMAX, TAVG, PRCP, DATE) 
+  yvec <- data.frame(DATE = seq.Date(from=as.Date(paste(yr[i+50],"01-01",sep="-")), 
+                                     to=as.Date(paste(yr[i+50],"04-15",sep="-")), by="day"))
+  stor[[i]] <- merge(stor[[i]], yvec, by="DATE", all=T)
+  
+  ifelse(nrow(stor[[i]]) > 1,
+         ifelse(sum(is.na(stor[[i]][,m])) > 0.10*nrow(stor[[i]]),  
+                ghcn.sw[i+50,m] <- NA,
+                ifelse(is.na(stor[[i]][nrow(stor[[i]]),m]) | is.na(stor[[i]][1,m]), 
+                       {stor[[i]][nrow(stor[[i]]),m] <- mean(stor[[i]][94:104,m], na.rm=T)
+                       stor[[i]][1,m] <- mean(stor[[i]][2:12,m], na.rm=T)
+                       stor[[i]][,m] <- na.approx(stor[[i]][,m]) 
+                       ghcn.sw[i+50,m] <- sum(stor[[i]][,m])}, 
+                       {stor[[i]][,m] <- na.approx(stor[[i]][,m]) 
+                       ghcn.sw[i+50,m] <- sum(stor[[i]][,m])})  ),
+         {ghcn.sw[i+50,2] <- NA
+         ghcn.sw[i+50,3] <- NA
+         ghcn.sw[i+50,4] <- NA
+         ghcn.sw[i+50,5] <- NA
+         ghcn.sw[i+50,6] <- NA})
+  
+  ifelse(!is.na(ghcn.sw[i+50,5]),
+         ghcn.sw[i+50,5] <- ghcn.sw[i+50,5],
+         {ifelse(!is.na(ghcn.sw[i+50,3]) & !is.na(ghcn.sw[i+50,4]),
+                 ghcn.sw[i+50,5] <- ((ghcn.sw[i+50,3] + ghcn.sw[i+50,4]) / 2),
+                 ghcn.sw[i+50,5] <- NA )}  )
+}
+
+ghcn.sw[118,3] <- (2*ghcn.sw[118,5]) - ghcn.sw[118,4]
+
+cherry.sw$tmin.m <- ghcn.sw[,3]
+cherry.sw$tmax.m <- ghcn.sw[,4]
+cherry.sw$tavg.m <- ghcn.sw[,5]
+cherry.sw$prcp.m <- ghcn.sw[,6]
+
+
+
+
+# Vancouver
+summary(vanc.ghcn[vanc.ghcn$year>2013,])
+# TMIN, TMAX, tavg.mar
+yr <- seq(from=1937, to=2021, by=1)
+ghcn.bc <- data.frame(yr, c(rep(NA, 85)), c(rep(NA, 85)), c(rep(NA, 85)) )
+stor <- list(NULL)
+
+for(i in 1:85) for(m in 3:4) {
+  stor[[i]] <- vanc.ghcn %>% 
+    filter(DATE >= as.Date(paste(yr[i], "01-01", sep="-")) & DATE <= as.Date(paste(yr[i], "04-15", sep="-")) ) %>% 
+    select(year, TMIN, TMAX, month, DATE) 
+  yvec <- data.frame(DATE = seq.Date(from=as.Date(paste(yr[i],"01-01",sep="-")), 
+                                     to=as.Date(paste(yr[i],"04-15",sep="-")), by="day"))
+  stor[[i]] <- merge(stor[[i]], yvec, by="DATE", all=T)
+}
+jan <- list(NULL)
+feb <- list(NULL)
+mar <- list(NULL)
+apr <- list(NULL)
+mena1 <- NULL ; mena2 <- NULL ; mena3 <- NULL ; mena4 <- NULL
+mena5 <- NULL ; mena6 <- NULL ; mena7 <- NULL ; mena8 <- NULL
+for(i in 1:85) {
+  
+  w1 <- as.data.frame(stor[[i]][1:31,3])
+  w2 <- as.data.frame(stor[[i]][32:59,3])
+  w3 <- as.data.frame(stor[[i]][60:90,3])
+  w4 <- as.data.frame(stor[[i]][91:nrow(stor[[i]]),3])
+  
+  names(w1) <- c("X0")
+  names(w2) <- c("X0")
+  names(w3) <- c("X0")
+  names(w4) <- c("X0")
+  
+  mena1[i] <- mean(w1$X0, na.rm=T)
+  mena2[i] <- mean(w2$X0, na.rm=T)
+  mena3[i] <- mean(w3$X0, na.rm=T)
+  mena4[i] <- mean(w4$X0, na.rm=T)
+  
+  q1 <- as.data.frame(stor[[i]][1:31,4])
+  q2 <- as.data.frame(stor[[i]][32:59,4])
+  q3 <- as.data.frame(stor[[i]][60:90,4])
+  q4 <- as.data.frame(stor[[i]][91:nrow(stor[[i]]),4])
+  
+  names(q1) <- c("X1")
+  names(q2) <- c("X1")
+  names(q3) <- c("X1")
+  names(q4) <- c("X1")
+  
+  mena5[i] <- mean(q1$X1, na.rm=T)
+  mena6[i] <- mean(q2$X1, na.rm=T)
+  mena7[i] <- mean(q3$X1, na.rm=T)
+  mena8[i] <- mean(q4$X1, na.rm=T)
+  
+  r1 <- cbind(w1, q1)
+  r2 <- cbind(w2, q2)
+  r3 <- cbind(w3, q3)
+  r4 <- cbind(w4, q4)
+  
+  jan[[1]] <- rbind(as.data.frame(jan[[1]]), r1)
+  feb[[1]] <- rbind(as.data.frame(feb[[1]]), r2)
+  mar[[1]] <- rbind(as.data.frame(mar[[1]]), r3)
+  apr[[1]] <- rbind(as.data.frame(apr[[1]]), r4)
+}
+
+jan <- as.data.frame(jan)
+feb <- as.data.frame(feb)
+mar <- as.data.frame(mar)
+apr <- as.data.frame(apr)
+
+tyme <- seq(from=1937, to=2021, by=1)
+plot(tyme, mena1, type="l")
+plot(tyme, mena2, type="l")
+plot(tyme, mena3, type="l")
+plot(tyme, mena4, type="l")
+plot(tyme, mena5, type="l")
+plot(tyme, mena6, type="l")
+plot(tyme, mena7, type="l")
+plot(tyme, mena8, type="l")
+
+j1 <- sd(jan[,1], na.rm=T) ; j2 <- sd(jan[,2], na.rm=T) ; j3 <- sd(feb[,1], na.rm=T) ; j4 <- sd(feb[,2], na.rm=T)
+j5 <- sd(mar[,1], na.rm=T) ; j6 <- sd(mar[,2], na.rm=T) ; j7 <- sd(apr[,1], na.rm=T) ; j8 <- sd(apr[,2], na.rm=T)
+
+menaj <- data.frame(NA,NA, mean(mena1), mean(mena5))
+menaf <- data.frame(NA,NA, mean(mena2), mean(mena6))
+menam <- data.frame(NA,NA, mean(mena3), mean(mena7))
+menaa <- data.frame(NA,NA, mean(mena4), mean(mena8))
+
+jj <- data.frame(NA,NA, j1, j5)
+jf <- data.frame(NA,NA, j2, j6)
+jm <- data.frame(NA,NA, j3, j7)
+ja <- data.frame(NA,NA, j4, j8)
+
+set.seed(7)
+for(i in 1:85)  {
+  hold.df <- stor[[i]]
+  
+  jans <- hold.df[hold.df$month==1, ] 
+  for(j in 1:nrow(jans)) for(k in 1:nrow(jans)) for(m in 3:4) {
+    ifelse(is.na(jans[k,m]),
+           jans[k,m] <- rnorm(1, mean=menaj[,m], sd=jj[,m]),
+           jans[k,m] <- jans[k,m] ) }
+    
+    febs <- hold.df[hold.df$month==2, ] 
+    for(j in (nrow(jans)+1):nrow(febs) ) for(k in 1:nrow(febs)) for(m in 3:4) {
+      ifelse(is.na(febs[k,m]),
+             febs[k,m] <- rnorm(1, mean=menaf[,m], sd=jf[,m]),
+             febs[k,m] <- febs[k,m] ) }
+    
+    mars <- hold.df[hold.df$month==3, ] 
+    for(j in (nrow(febs)+1):nrow(mars) ) for(k in 1:nrow(mars)) for(m in 3:4) {
+      ifelse(is.na(mars[k,m]),
+             mars[k,m] <- rnorm(1, mean=menam[,m], sd=jm[,m]),
+             mars[k,m] <- mars[k,m] ) }
+    
+    aprs <- hold.df[hold.df$month==4, ] 
+    for(j in (nrow(mars)+1):nrow(aprs) ) for(k in 1:nrow(aprs)) for(m in 3:4) {
+      ifelse(is.na(aprs[k,m]),
+             aprs[k,m] <- rnorm(1, mean=menaa[,m], sd=ja[,m]),
+             aprs[k,m] <- aprs[k,m] ) }
+    
+    stor[[i]] <- jans %>% rbind(febs) %>% rbind(mars) %>% rbind(aprs)
+    for(m in 3:4){ ghcn.bc[i,m] <- sum(stor[[i]][,m]) }
+    ghcn.bc[i,5] <- sum((stor[[i]][,3] + stor[[i]][,4]) / 2)
+}    
+    
+cherry.bc$TMIN <- ghcn.bc[,3]
+cherry.bc$TMAX <- ghcn.bc[,4]
+cherry.bc$tavg.m <- ghcn.bc[,5]
+
+
+
+# prcp.m
+yr <- seq(from=1937, to=2021, by=1)
+ghcn.bc <- data.frame(yr, c(rep(NA, 85)), c(rep(NA, 85)) )
+stor <- list(NULL)
+
+for(i in 1:85)  {
+  stor[[i]] <- vanc.ghcn %>% 
+    filter(DATE >= as.Date(paste(yr[i], "01-01", sep="-")) & DATE <= as.Date(paste(yr[i], "04-15", sep="-")) ) %>% 
+    select(year, PRCP, DATE) 
+  yvec <- data.frame(DATE = seq.Date(from=as.Date(paste(yr[i],"01-01",sep="-")), 
+                                     to=as.Date(paste(yr[i],"04-15",sep="-")), by="day"))
+  stor[[i]] <- merge(stor[[i]], yvec, by="DATE", all=T)
+  
+  for(k in 1:nrow(stor[[i]])) {
+  ifelse(is.na(stor[[i]][k,"PRCP"]),
+         stor[[i]][k,"PRCP"] <- 0,
+         stor[[i]][k,"PRCP"] <- stor[[i]][k,"PRCP"])}
+         
+  ghcn.bc[i,3] <- sum(stor[[i]][,"PRCP"])
+}
+
+cherry.bc$prcp.m <- ghcn.bc[,3]
+
+
+
+
+
 
 ##################################################################################
 ##################################################################################
@@ -1300,6 +1721,7 @@ cherry.ja$chill.days <- as.numeric(tab[,4])
 ##################################################################################
 yr <- seq(from=1900, to=2021, by=1)
 stor <- list(NULL)
+mor <- list(NULL)
 
 for(j in 1:71) {
   stor[[j]] <- kyoto.ghcn %>% 
@@ -1332,13 +1754,19 @@ for(j in 1:71) {
            stor[[j]][q,"TMIN"] <- weighted.mean(x=c(stor[[j-1]][q,"TMIN"], stor[[j-2]][q,"TMIN"], stor[[j-3]][q,"TMIN"], stor[[j-4]][q,"TMIN"], stor[[j-5]][q,"TMIN"]), w=c(bd.ja[j-1], bd.ja[j-2], bd.ja[j-3], bd.ja[j-4], bd.ja[j-5]))
          stor[[j]][q,"TMAX"] <- weighted.mean(x=c(stor[[j-1]][q,"TMAX"], stor[[j-2]][q,"TMAX"], stor[[j-3]][q,"TMAX"], stor[[j-4]][q,"TMAX"], stor[[j-5]][q,"TMAX"]), w=c(bd.ja[j-1], bd.ja[j-2], bd.ja[j-3], bd.ja[j-4], bd.ja[j-5]))}},
          emptyvec2 <- TRUE )
+
+  rang <- as.Date(paste(yr[j+51],"04-16",sep="-")) - as.Date(paste(yr[j+51],"01-01",sep="-"))
+  mor[[j]] <- stor[[j]][1:rang,]
   
   stor[[j]] <- stor[[j]][1:bd.ja[j+51],]
 }
 
 year_file <- list(NULL)
+year_file2 <- list(NULL)
 hr_temp.ja <- list(NULL)
+hr_temp.ja2 <- list(NULL)
 hr_t.ja <- NULL
+hr_t.ja2 <- NULL
 for (k in 1:71) {
   year_file[[k]] <- stor[[k]][, c("DATE", "TMIN", "TMAX")] %>% 
     separate(col=DATE, into=c("Year", "Month", "Day"), remove=TRUE)
@@ -1349,28 +1777,52 @@ for (k in 1:71) {
   subset2 <- make_JDay(subset)
   
   year_file[[k]] <- data.frame(year_file[[k]][,1:2], subset2)
+  
+  # JAN-APR
+  year_file2[[k]] <- mor[[k]][, c("DATE", "TMIN", "TMAX")] %>% 
+    separate(col=DATE, into=c("Year", "Month", "Day"), remove=TRUE)
+  year_file2[[k]] <- as.data.frame(year_file2[[k]])
+  year_file2[[k]] <- year_file2[[k]][,c(4,5,1,2,3)]
+  
+  subset3 <- year_file2[[k]][,3:5]
+  subset4 <- make_JDay(subset3)
+  
+  year_file2[[k]] <- data.frame(year_file2[[k]][,1:2], subset4)
 }
+
 names.file <- c("Tmin", "Tmax", "Year", "Month", "Day", "JDay")
 year_file <- lapply(year_file, setNames, names.file)
+year_file2 <- lapply(year_file2, setNames, names.file)
+
+
 for (k in 1:54) {
   hr_temp.ja[[k]] <- make_hourly_temps(latitude = 35.0120, year_file = year_file[[k]])
   hr_t.ja[k] <- hr_temp.ja[[k]][length(hr_temp.ja[[k]])]
+  
+  hr_temp.ja2[[k]] <- make_hourly_temps(latitude = 35.0120, year_file = year_file2[[k]])
+  hr_t.ja2[k] <- hr_temp.ja2[[k]][length(hr_temp.ja2[[k]])]
 }
 for (k in 56:71) {
   hr_temp.ja[[k]] <- make_hourly_temps(latitude = 35.0120, year_file = year_file[[k]])
   hr_t.ja[k] <- hr_temp.ja[[k]][length(hr_temp.ja[[k]])]
+  
+  hr_temp.ja2[[k]] <- make_hourly_temps(latitude = 35.0120, year_file = year_file2[[k]])
+  hr_t.ja2[k] <- hr_temp.ja2[[k]][length(hr_temp.ja2[[k]])]
 }
 
 gdd.ja <- data.frame(yr, c(rep(NA, 122))) 
+gdd.ja2 <- data.frame(yr, c(rep(NA, 122))) 
 for (h in 1:54) {
   gdd.ja[h+51,2] <- tail(GDD(hr_t.ja[[h]], summ=TRUE, Tbase=5), n=1)
+  gdd.ja2[h+51,2] <- tail(GDD(hr_t.ja2[[h]], summ=TRUE, Tbase=5), n=1)
 }
 for (h in 56:71) {
   gdd.ja[h+51,2] <- tail(GDD(hr_t.ja[[h]], summ=TRUE, Tbase=5), n=1)
+  gdd.ja2[h+51,2] <- tail(GDD(hr_t.ja2[[h]], summ=TRUE, Tbase=5), n=1)
 }
 
 cherry.ja$GDD <- gdd.ja[,2]
-
+cherry.ja$gdd.m <- gdd.ja2[,2]
 
 
 
@@ -1379,6 +1831,7 @@ cherry.ja$GDD <- gdd.ja[,2]
 ##################################################################################
 yr <- seq(from=1921, to=2021, by=1)
 stor <- list(NULL)
+mor <- list(NULL)
 
 for(j in 1:76) {
   stor[[j]] <- dc.ghcn %>% 
@@ -1399,12 +1852,18 @@ for(j in 1:76) {
   stor[[j]][,"TMIN"] <- interpolate_gaps(stor[[j]][,"TMIN"])$interp
   stor[[j]][,"TMAX"] <- interpolate_gaps(stor[[j]][,"TMAX"])$interp
   
+  rang <- as.Date(paste(yr[j+25],"04-16",sep="-")) - as.Date(paste(yr[j+25],"01-01",sep="-"))
+  mor[[j]] <- stor[[j]][1:rang,]
+  
   stor[[j]] <- stor[[j]][1:bd.dc[j+25],]
 }
 
 year_file <- list(NULL)
+year_file2 <- list(NULL)
 hr_temp.dc <- list(NULL)
+hr_temp.dc2 <- list(NULL)
 hr_t.dc <- NULL
+hr_t.dc2 <- NULL
 for (k in 1:76) {
   year_file[[k]] <- stor[[k]][, c("DATE", "TMIN", "TMAX")] %>% 
     separate(col=DATE, into=c("Year", "Month", "Day"), remove=TRUE)
@@ -1415,24 +1874,44 @@ for (k in 1:76) {
   subset2 <- make_JDay(subset)
   
   year_file[[k]] <- data.frame(year_file[[k]][,1:2], subset2)
+  
+  # JAN-APR
+  year_file2[[k]] <- mor[[k]][, c("DATE", "TMIN", "TMAX")] %>% 
+    separate(col=DATE, into=c("Year", "Month", "Day"), remove=TRUE)
+  year_file2[[k]] <- as.data.frame(year_file2[[k]])
+  year_file2[[k]] <- year_file2[[k]][,c(4,5,1,2,3)]
+  
+  subset3 <- year_file2[[k]][,3:5]
+  subset4 <- make_JDay(subset3)
+  
+  year_file2[[k]] <- data.frame(year_file2[[k]][,1:2], subset4)
 }
 
 names.file <- c("Tmin", "Tmax", "Year", "Month", "Day", "JDay")
 year_file <- lapply(year_file, setNames, names.file)
+year_file2 <- lapply(year_file2, setNames, names.file)
+
 
 for (k in 1:76) {
   hr_temp.dc[[k]] <- make_hourly_temps(latitude = 38.8853, year_file = year_file[[k]])
   hr_t.dc[k] <- hr_temp.dc[[k]][length(hr_temp.dc[[k]])]
+  
+  hr_temp.dc2[[k]] <- make_hourly_temps(latitude = 38.8853, year_file = year_file2[[k]])
+  hr_t.dc2[k] <- hr_temp.dc2[[k]][length(hr_temp.dc2[[k]])]
 }
 
 
 gdd.dc <- data.frame(yr, c(rep(NA, 101))) 
+gdd.dc2 <- data.frame(yr, c(rep(NA, 101))) 
 for (h in 1:76) {
   gdd.dc[h+25,2] <- tail(GDD(hr_t.dc[[h]], summ=TRUE, Tbase=5), n=1)
+  gdd.dc2[h+25,2] <- tail(GDD(hr_t.dc2[[h]], summ=TRUE, Tbase=5), n=1)
 }
 
 
 cherry.dc$GDD <- gdd.dc[,2]
+cherry.dc$gdd.m <- gdd.dc2[,2]
+
 
 
 
@@ -1442,6 +1921,7 @@ cherry.dc$GDD <- gdd.dc[,2]
 ##################################################################################
 yr <- seq(from=1900, to=2021, by=1)
 stor <- list(NULL)
+mor <- list(NULL)
 
 for(j in 1:121) {
   stor[[j]] <- liestal.ghcn %>% 
@@ -1462,12 +1942,18 @@ for(j in 1:121) {
   stor[[j]][,"TMIN"] <- interpolate_gaps(stor[[j]][,"TMIN"])$interp
   stor[[j]][,"TMAX"] <- interpolate_gaps(stor[[j]][,"TMAX"])$interp
   
+  rang <- as.Date(paste(yr[j+1],"04-16",sep="-")) - as.Date(paste(yr[j+1],"01-01",sep="-"))
+  mor[[j]] <- stor[[j]][1:rang,]
+  
   stor[[j]] <- stor[[j]][1:bd.sw[j+1],]
 }
 
 year_file <- list(NULL)
+year_file2 <- list(NULL)
 hr_temp.sw <- list(NULL)
+hr_temp.sw2 <- list(NULL)
 hr_t.sw <- NULL
+hr_t.sw2 <- NULL
 for (k in 1:121) {
   year_file[[k]] <- stor[[k]][, c("DATE", "TMIN", "TMAX")] %>% 
     separate(col=DATE, into=c("Year", "Month", "Day"), remove=TRUE)
@@ -1478,24 +1964,107 @@ for (k in 1:121) {
   subset2 <- make_JDay(subset)
   
   year_file[[k]] <- data.frame(year_file[[k]][,1:2], subset2)
+  
+  # JAN-APR
+  year_file2[[k]] <- mor[[k]][, c("DATE", "TMIN", "TMAX")] %>% 
+    separate(col=DATE, into=c("Year", "Month", "Day"), remove=TRUE)
+  year_file2[[k]] <- as.data.frame(year_file2[[k]])
+  year_file2[[k]] <- year_file2[[k]][,c(4,5,1,2,3)]
+  
+  subset3 <- year_file2[[k]][,3:5]
+  subset4 <- make_JDay(subset3)
+  
+  year_file2[[k]] <- data.frame(year_file2[[k]][,1:2], subset4)
 }
 
 names.file <- c("Tmin", "Tmax", "Year", "Month", "Day", "JDay")
 year_file <- lapply(year_file, setNames, names.file)
+year_file2 <- lapply(year_file2, setNames, names.file)
 
 for (k in 1:121) {
   hr_temp.sw[[k]] <- make_hourly_temps(latitude = 47.4814, year_file = year_file[[k]])
   hr_t.sw[k] <- hr_temp.sw[[k]][length(hr_temp.sw[[k]])]
+  
+  hr_temp.sw2[[k]] <- make_hourly_temps(latitude = 47.4814, year_file = year_file2[[k]])
+  hr_t.sw2[k] <- hr_temp.sw2[[k]][length(hr_temp.sw2[[k]])]
 }
 
 
 gdd.sw <- data.frame(yr, c(rep(NA, 122))) 
+gdd.sw2 <- data.frame(yr, c(rep(NA, 122))) 
 for (h in 1:121) {
   gdd.sw[h+1,2] <- tail(GDD(hr_t.sw[[h]], summ=TRUE, Tbase=5), n=1)
+  gdd.sw2[h+1,2] <- tail(GDD(hr_t.sw2[[h]], summ=TRUE, Tbase=5), n=1)
 }
 
 
 cherry.sw$GDD <- gdd.sw[,2]
+cherry.sw$gdd.m <- gdd.sw2[,2]
+
+
+
+# Vancouver
+##################################################################################
+##################################################################################
+yr <- seq(from=1937, to=2021, by=1)
+stor <- list(NULL)
+mor <- list(NULL)
+
+for(j in 1:85) {
+  stor[[j]] <- vanc.ghcn %>% 
+    filter(year == yr[j]) %>% 
+    select(year, TMIN, TMAX, TAVG, DATE)
+  yvec <- data.frame(DATE = seq.Date(from=as.Date(paste(yr[j],"01-01",sep="-")), to=as.Date(paste(yr[j],"12-31",sep="-")), by="day"))
+  stor[[j]] <- merge(stor[[j]], yvec, by="DATE", all=T)
+  n <- nrow(stor[[j]])
+  
+  ifelse(is.na(stor[[j]][1,"TMIN"]), stor[[j]][1,"TMIN"] <- mean(stor[[j]][2:12,"TMIN"], na.rm=T), stor[[j]][1,"TMIN"]<-stor[[j]][1,"TMIN"] )
+  
+  ifelse(is.na(stor[[j]][n,"TMIN"]), stor[[j]][n,"TMIN"] <- mean(stor[[j]][354:364,"TMIN"], na.rm=T), stor[[j]][n,"TMIN"]<-stor[[j]][n,"TMIN"] )
+  
+  ifelse(is.na(stor[[j]][1,"TMAX"]), stor[[j]][1,"TMAX"] <- mean(stor[[j]][2:12,"TMAX"], na.rm=T), stor[[j]][1,"TMAX"]<-stor[[j]][1,"TMAX"] )
+  
+  ifelse(is.na(stor[[j]][n,"TMAX"]), stor[[j]][n,"TMAX"] <- mean(stor[[j]][354:364,"TMAX"], na.rm=T), stor[[j]][n,"TMAX"]<-stor[[j]][n,"TMAX"] )
+  
+  stor[[j]][,"TMIN"] <- interpolate_gaps(stor[[j]][,"TMIN"])$interp
+  stor[[j]][,"TMAX"] <- interpolate_gaps(stor[[j]][,"TMAX"])$interp
+  
+  rang <- as.Date(paste(yr[j],"04-16",sep="-")) - as.Date(paste(yr[j],"01-01",sep="-"))
+  mor[[j]] <- stor[[j]][1:rang,]
+}
+
+year_file2 <- list(NULL)
+hr_temp.bc2 <- list(NULL)
+hr_t.bc2 <- NULL
+for (k in 1:85) {
+  # JAN-APR
+  year_file2[[k]] <- mor[[k]][, c("DATE", "TMIN", "TMAX")] %>% 
+    separate(col=DATE, into=c("Year", "Month", "Day"), remove=TRUE)
+  year_file2[[k]] <- as.data.frame(year_file2[[k]])
+  year_file2[[k]] <- year_file2[[k]][,c(4,5,1,2,3)]
+  
+  subset3 <- year_file2[[k]][,3:5]
+  subset4 <- make_JDay(subset3)
+  
+  year_file2[[k]] <- data.frame(year_file2[[k]][,1:2], subset4)
+}
+
+names.file <- c("Tmin", "Tmax", "Year", "Month", "Day", "JDay")
+year_file2 <- lapply(year_file2, setNames, names.file)
+
+for (k in 1:85) {
+  hr_temp.bc2[[k]] <- make_hourly_temps(latitude = 38.8853, year_file = year_file2[[k]])
+  hr_t.bc2[k] <- hr_temp.bc2[[k]][length(hr_temp.bc2[[k]])]
+}
+
+
+gdd.bc2 <- data.frame(yr, c(rep(NA, 85))) 
+for (h in 1:85) {
+  gdd.bc2[h,2] <- tail(GDD(hr_t.bc2[[h]], summ=TRUE, Tbase=5), n=1)
+}
+
+
+cherry.bc$gdd.m <- gdd.bc2[,2]
 
 
 
@@ -1779,7 +2348,19 @@ for(k in 1:length(yr)) {
   bc.sunms.fut[k] <- sunhr.bc[k] / (60 * d)
 }
 
+
+
+# plant hardiness zone for Vancouver
+cherry.bc$hardiness.zone <- "8b"
+
+
+
 view(cherry.ja)
 view(cherry.dc)
 view(cherry.sw)
+view(cherry.bc)
+
+
+
+
 
