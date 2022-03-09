@@ -20,6 +20,9 @@ cherry.dc.sub <- cherry.dc[cherry.dc$year >= 1973,
                            c("sun", "sun.mar", "sun.maysep", "WDSP", "SLP", "PRCP", "SNWD", "Tavg", 
                              "TempDiffAbs", "heat.days", "chill.days", "ppd", "GDD", "bloom_doy")]
 
+scatterplotMatrix(cherry.dc.sub)
+cor(cherry.dc.sub)
+
 
 # Stepwise Regression
 lm1 <- lm(bloom_doy ~ sun.mar + sun.maysep + WDSP + SLP + PRCP + SNWD + Tavg + 
@@ -385,6 +388,7 @@ rmse(cherry.dc$bloom_doy[53:101], as.vector(dc.arima2$fitted)) # ARIMA2 (6 0 3; 
 
 # ARIMA2 has the lowest RMSE, ARIMA2 is our final model.
 summary(dc.arima2)
+dc.arima2$arma
 
 # residuals plots
 df3 <- data.frame(fitted=fitted(dc.arima2), residuals=residuals(dc.arima2))
@@ -716,6 +720,7 @@ summary(regsubsets(y = cherry.ja.y, x = cherry.ja.pred, nbest=1))
 
 
 scatterplotMatrix(cherry.ja.sub)
+cor(cherry.ja.sub)
 
 ja.lm1 <- lm(PBD ~ TAVG + heat.days + chill.days + GDD, data=cherry.ja.sub)
 summary(ja.lm1)
@@ -858,7 +863,7 @@ ggplot(df1, aes(x=fitted, y=residuals)) +
   geom_point() 
 qqPlot(residuals(ja.arima))
 
-# final arima model is
+# final SARIMA model is
 summary(ja.arima)
 ja.arima$arma
 checkresiduals(ja.arima)
@@ -866,7 +871,7 @@ checkresiduals(ja.arima)
 
 # Forecast
 ##############################################################
-# predictions from ARIMA model
+# predictions from SARIMA model
 ja.arima.pred <- as.data.frame(forecast(ja.arima, xreg=cbind(t_avg, chill, gdd, sun_t, ts.slp)))[1:11,1]
 
 fitjanomis <- as.vector(na_remove(ja.arima$fitted))
@@ -895,6 +900,7 @@ cherry.sw.sub2 <- cherry.sw[cherry.sw$year >= 1954,
                            c("sun.mar", "sun.maysep", "PRCP", "SNWD", "Tavg", "TempDiffAbs", 
                              "heat.days", "chill.days", "GDD", "PBD")] 
 
+
 lm5 <- lm(PBD ~ sun.mar + sun.maysep + PRCP + SNWD + Tavg + TempDiffAbs + heat.days + chill.days + GDD,
           data=cherry.sw.sub, na.action = na.omit)
 summary(lm5)
@@ -914,6 +920,7 @@ bestlm3$best
 summary(regsubsets(y = cherry.sw.y, x = cherry.sw.pred, nbest=1 ))
 
 scatterplotMatrix(cherry.sw.sub)
+cor(cherry.sw.sub)
 
 # linear models
 sw.lm1 <- lm(PBD ~ sun.maysep + TempDiffAbs + heat.days + chill.days + GDD, 
@@ -1203,6 +1210,10 @@ rmse(cherry.sw[cherry.sw$year>=1931, "PBD"], sw.auto.arima3$fitted)
 
 # final SARIMA model is
 summary(sw.arima)
+sw.arima$arma
+checkresiduals(sw.arima)
+sw.arima$call
+
 
 
 
@@ -1214,6 +1225,7 @@ sw.arima.pred <- as.data.frame(forecast(sw.arima,
 
 # Final unadjusted forecasted DOYs for 2022-2032 are:
 sw.final.pred <- sw.arima.pred - ((1-(0.25*(1/0.7)))*7 - 0.5)
+sw.pred.tbl <- data.frame(year=yr.f, liestal=sw.final.pred)
 
 # forecast date for 2022: 
 as.Date(sw.final.pred[1], origin="2022-01-01")
@@ -1347,18 +1359,26 @@ nrow(cherry.df.sub[cherry.df.sub$location == "kyoto", ])
 nrow(cherry.df.sub[cherry.df.sub$location == "liestal", ])
 
 # RMSE of all.lm1
-rmse(cherry.df.sub[cherry.df.sub$location == "washingtondc", "PBD"], all.lm1$fitted.values[1:66])
-rmse(cherry.df.sub[cherry.df.sub$location == "kyoto", "PBD"], all.lm1$fitted.values[67:136])
-rmse(cherry.df.sub[cherry.df.sub$location == "liestal", "PBD"], all.lm1$fitted.values[137:208])
+rmse(cherry.df.sub[cherry.df.sub$location == "washingtondc", "PBD"], all.lm$fitted.values[1:66])
+rmse(cherry.df.sub[cherry.df.sub$location == "kyoto", "PBD"], all.lm$fitted.values[67:136])
+rmse(cherry.df.sub[cherry.df.sub$location == "liestal", "PBD"], all.lm$fitted.values[137:208])
+
+
+# Final Linear Model
+####################
+all.lm <- lm(PBD ~ prcp.m + sun.maysep + tavg.m + gdd.m, data=cherry.df)
+summary(all.lm)
+
 
 
 # Data for Vancouver
-vancouver.data <- cherry.bc[ ,c("year", "prcp.m", "tavg.m", "gdd.m")]
+vancouver.data <- cherry.bc[ ,c("year", "prcp.m", "tavg.m", "gdd.m", "sun.maysep")]
 
 # create time series
 bc.prcp <- ts(cherry.bc$prcp.m)
 bc.tavg <- ts(cherry.bc$tavg.m)
 bc.gdd <- ts(cherry.bc$gdd.m)
+bc.sms <- ts(cherry.bc$sun.maysep)
 bc.hz <- ts(cherry.bc$hardiness.zone)
 
 
@@ -1389,16 +1409,18 @@ bc.gdd.fut$arma
 bc.gdd.pred <- as.data.frame(forecast(bc.gdd.fut, xreg=cbind(bc.prcp, bc.tavg)))[1:11,1]
 
 
+# forecasted covariates dataframe
 yr.f <- seq(from=2022, to=2032, by=1)
-pred.covs <- data.frame(year=yr.f, prcp.m=bc.tavg.pred, tavg.m=bc.tavg.pred, gdd.m=bc.gdd.pred)
+pred.covs <- data.frame(year=yr.f, prcp.m=bc.tavg.pred, tavg.m=bc.tavg.pred, gdd.m=bc.gdd.pred, sun.maysep=bc.sunms.fut)
 vancouver.data <- rbind(vancouver.data, pred.covs)
 
 
+
 # Vancouver forecast for 2022-2032:
-predict.bc <- predict(all.lm1, newdata = pred.covs)
-
+############################################################
+predict.bc <- predict(all.lm, newdata = pred.covs)
 predict.tbl <- data.frame(year=yr.f, vancouver_doy=predict.bc)
-
+predict.tbl
 
 
 
@@ -1453,9 +1475,19 @@ VARselect(as.matrix(zt, nrow=68))
 all.var <- VAR(as.matrix(zt, nrow=68), p=1)
 all.var$bic
 
-# forecast
+
+
+# Forecast with VAR Model
+###########################################################################
+VARpred(all.var, h=11)
+
+# Forecasted dates for DC, Kyoto, and Liestal from VAR model
 table1 <- as.data.frame(VARpred(all.var, h=11)[1])
 cities <- data.frame(year=yr.f, table1)
+cities
+
+
+# Forecasted dates for Vancouver from VAR model
 vancouver.var.preds <- data.frame(year=yr.f, vancouver_doy=rowMeans(table1))
 vancouver.var.preds
 
@@ -1465,10 +1497,6 @@ vancouver.var.preds
 
 VARX(zt=zt, p=1, include.mean=T)
 
-
-length(cherry.var[cherry.var$location=="kyoto", "GDD"])
-length(cherry.var[cherry.var$location=="washingtondc", "GDD"])
-length(cherry.var[cherry.var$location=="liestal", "GDD"])
 
 
 
@@ -1541,7 +1569,6 @@ plot(all.lm)
 
 
 
-library(vars)
 
 
 var.df <- cherry.df.s[,c("Tavg", "sun", "sun.maysep")]
