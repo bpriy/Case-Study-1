@@ -412,22 +412,30 @@ as.Date(dc.final.pred[1], origin="2022-01-01")
 
 
 
-# General Additive Model
+# Generalized Additive Model
 ##########################################
-dc.gam <- gam(dc.bloom.ts ~ s(dc.x1.t) + s(dc.x2.t) + s(dc.x3.t))
+dc.gam <- gam(bloom_doy ~ s(WDSP) + s(PRCP) + s(Tavg) + s(GDD) + s(TempDiffAbs), 
+              data=cherry.dc.sub, family=gaussian())
 summary(dc.gam)
 pacf(resid(dc.gam))
 
-dc.gam2 <- gam(bloom_doy ~ s(sun) + s(sun.maysep) + s(Tavg), data=cherry.dc.sub)
-summary(dc.gam2)
 
 
-AIC(dc.gam2)
-acf(resid(dc.gam2))
-pacf(resid(dc.gam2))
-plot(dc.gam2)
-gam.check(dc.gam2)
-concurvity(dc.gam2)
+AIC(dc.gam)
+acf(resid(dc.gam))
+pacf(resid(dc.gam))
+plot(dc.gam)
+gam.check(dc.gam)
+concurvity(dc.gam)
+
+# PBD predictions from generalized additive model
+dc.gam.pred <- predict(dc.gam, newdata=fut.data2)
+dc.gam.pred.tbl <- data.frame(year=yr.f, GAM_forecast=dc.gam.pred)
+dc.gam.pred.tbl
+
+# RMSE for GAM model
+rmse(cherry.dc.sub$bloom_doy, dc.gam$fitted.values)
+
 
 
 dc.gam4 <- gamm(bloom_doy ~ s(sun) + s(sun.maysep) + s(Tavg), 

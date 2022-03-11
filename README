@@ -1,0 +1,38 @@
+#################################################################
+################################################################
+                          README
+#################################################################
+#################################################################
+
+# Case Study 1
+# STAT 634
+
+# Analysis by:
+  Jonathan Abbamonte
+  Priyanjali Bukke
+  
+###################################################################
+
+
+R code for data analysis for Case Study 1 can be found in the folder titled "01. MAIN DATA ANALYSIS".
+
+The file "Analysis.R" is the code for loading and cleaning the data. You must run this file first.
+The file "Analysis 2.R" is the code for our sttatistical analysis and modeling.
+
+The code for the loops we used to search for the best possible ARIMA models are in the file
+titled "optimize_arima.R". Run this code with great caution as it will take an extremely long time to run 
+these for loops. It took me several hours to run this code.
+
+The "Analysis.R" and "Analysis 2.R" code should not give you any trouble. They run through in a few minutes.
+
+The R code used to optimize the parameters for chill days and heating days can be found in the folder
+titled "Phenology Model-GDD". The files used to optimze the parameters that we used in our final model 
+are found in the files titled: "DC10_par.R", "KY10_par.R", and "L10_par".
+All the other files in this folder can be ignored.
+You do not need to run this code to run the "Analysis.R" or "Analysis 2.R" code.
+
+Data for our analysis and all our modeling can be found in the "data" folder.
+
+The slides from our presentation can be found in the "Presentation" folder.
+
+
