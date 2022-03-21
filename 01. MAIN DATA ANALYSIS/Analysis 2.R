@@ -400,6 +400,11 @@ qqPlot(residuals(dc.arima2))
 
 # Forecast
 #######################################################################
+#Forecasted PBDs from Linear Model lm.r2
+yr.f <- seq(from=2022, to=2032, by=1)
+lm.r2.tbl <- data.frame(year=yr.f, dc.pred.lmr2)
+
+
 # Final forecasted DOYs for 2022-2032 are:
 dc.final.pred <- dc.arima.pred2
 yr.f <- seq(from=2022, to=2032, by=1)
@@ -1194,6 +1199,18 @@ futs.data <- data.frame(year=yr.futs, sun.maysep=sw.sunms.fut, TempDiffAbs=TempD
 # projections from sw.r3
 sw.r3.pred <- predict(sw.r3, newdata=futs.data)
 
+fed1 <- anova(sw.r3)
+tail(fed1$`Sum Sq`, n=1)
+fed1$`Mean Sq`
+fed2 <- summary(sw.r3)
+fed2$r.squared
+
+
+SSE <- tail(anova(sw.r3)$`Sum Sq`, n=1)
+R2 <- summary(sw.r3)$r.squared
+
+SST = SSE / (1 - R2)
+
 
 sw.pbd.ts3 <- ts(sw.pbd.ts, frequency=5)
 sw.r3n <- tslm(sw.pbd.ts3 ~ trend + season)
@@ -1227,6 +1244,10 @@ sw.arima$call
 
 # Forecast
 ##############################################################
+# Forecasts from Linear Model sw.r3
+sw.r3.pred.adj <- sw.r3.pred - ((1-(0.25*(1/0.7)))*7 - 0.5)
+sw.pred.lm.tbl <- data.frame(year=yr.f, liestal=sw.r3.pred.adj)
+
 # predictions from SARIMA model
 sw.arima.pred <- as.data.frame(forecast(sw.arima, 
                                         xreg=cbind(sun_ms, tempdif, gdd, t_avg, chill)))[1:11,1]
@@ -1469,7 +1490,7 @@ pp.test(ts.pbd.sw)
 # Use VAR in levels.
 
 zt <- data.frame(kyoto=cherry.ja[cherry.ja$year>=1954, "PBD"],
-                 washingtondc=cherry.dc[cherry.dc$year>=1954, "PBD"],
+                 washingtondc=cherry.dc[cherry.dc$year>=1954, "sPBD"],
                  liestal=cherry.sw[cherry.sw$year>=1954, "PBD"])
 
 cherry.var <- cherry.df[cherry.df$year >= 1954, ] %>% 
@@ -1509,12 +1530,73 @@ VARX(zt=zt, p=1, include.mean=T)
 
 
 
+boxplot(blooms$DC_doy, blooms$liestal_doy,
+        xlab = c("Washington", "Liestal"))
+
+
+for (i in 1:nrow(cherry.df)) {
+  ifelse(is.na(cherry.df$location[i]), 
+         cherry.df$location[i] <- "kyoto", 
+         cherry.df$location[i] <- cherry.df$location[i])
+}
+for (i in 1:nrow(cherry.df)) {
+  ifelse(cherry.df$location[i] == "kyoto", cherry.df$location[i] <- "Kyoto",
+         ifelse(cherry.df$location[i] == "washingtondc", cherry.df$location[i] <- "Washington",
+                ifelse(cherry.df$location[i] == "liestal", cherry.df$location[i] <- "Liestal", u<-2)))
+}
+
+
+cbPalette <- c("#000000", "#E69F00", "#56B4E9")
+ggplot(cherry.df, aes(x=year, y=bloom_doy, group=location)) + 
+  geom_line(aes(color=location), size=.75) + 
+  scale_colour_manual(values=cbPalette) +
+  labs(title="Fig. 1 - Historic Number of Days to Peak Bloom by Location",
+       x="Year", y="Number of days to peak bloom")
+
+cbPalette2 <- c("#009E73", "#E69F00", "#56B4E9")
+ggplot(cherry.df, aes(x=location, y=bloom_doy)) + 
+  geom_boxplot(fill=cbPalette2) + 
+  labs(title="Fig. 2 - Boxplots of Number of Days to Peak Bloom by Location",
+       x="Location", y="Number of days to peak bloom")
+
+summary(cherry.df[cherry.df$location=="Washington", "bloom_doy"])
 
 
 
+# Predictive R-squared
+# @author Thomas Hopper
+# code and methods for computing predicted R-squared are borrowed from: https://rpubs.com/RatherBit/102428
+# and https://tomhopper.me/2014/05/16/can-we-do-better-than-r-squared/
+
+# predicted residual sums of squares (PRESS)
+PRESS <- function(linear.model) {
+  PRESS <- sum( (residuals(linear.model)/(1-lm.influence(linear.model)$hat))^2 )
+  return(PRESS)
+}
+
+# predicted R-squared
+pred_r_squared <- function(linear.model) {
+  TSS <- sum(anova(linear.model)$'Sum Sq')
+  pred.r.squared <- 1-PRESS(linear.model)/(TSS)
+  return(pred.r.squared)
+}
 
 
 
+# Washington, DC
+#################
+pred_r_squared(lm.r2)
+summary(lm.r2)$r.squared
+
+# Liestal
+#############
+pred_r_squared(sw.r3)
+summary(sw.r3)$r.squared
+
+# Vancouver
+##############
+pred_r_squared(all.lm)
+summary(all.lm)$r.squared
 
 
 

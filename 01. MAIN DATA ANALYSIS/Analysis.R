@@ -2379,6 +2379,7 @@ view(cherry.bc)
 
 
 
+
 # Linear Models
 #########################################################################
 # Washington, DC
@@ -2780,6 +2781,11 @@ qqPlot(residuals(dc.arima2))
 
 # Forecast
 #######################################################################
+#Forecasted PBDs from Linear Model lm.r2
+yr.f <- seq(from=2022, to=2032, by=1)
+lm.r2.tbl <- data.frame(year=yr.f, dc.pred.lmr2)
+
+
 # Final forecasted DOYs for 2022-2032 are:
 dc.final.pred <- dc.arima.pred2
 yr.f <- seq(from=2022, to=2032, by=1)
@@ -2792,22 +2798,30 @@ as.Date(dc.final.pred[1], origin="2022-01-01")
 
 
 
-# General Additive Model
+# Generalized Additive Model
 ##########################################
-dc.gam <- gam(dc.bloom.ts ~ s(dc.x1.t) + s(dc.x2.t) + s(dc.x3.t))
+dc.gam <- gam(bloom_doy ~ s(WDSP) + s(PRCP) + s(Tavg) + s(GDD) + s(TempDiffAbs), 
+              data=cherry.dc.sub, family=gaussian())
 summary(dc.gam)
 pacf(resid(dc.gam))
 
-dc.gam2 <- gam(bloom_doy ~ s(sun) + s(sun.maysep) + s(Tavg), data=cherry.dc.sub)
-summary(dc.gam2)
 
 
-AIC(dc.gam2)
-acf(resid(dc.gam2))
-pacf(resid(dc.gam2))
-plot(dc.gam2)
-gam.check(dc.gam2)
-concurvity(dc.gam2)
+AIC(dc.gam)
+acf(resid(dc.gam))
+pacf(resid(dc.gam))
+plot(dc.gam)
+gam.check(dc.gam)
+concurvity(dc.gam)
+
+# PBD predictions from generalized additive model
+dc.gam.pred <- predict(dc.gam, newdata=fut.data2)
+dc.gam.pred.tbl <- data.frame(year=yr.f, GAM_forecast=dc.gam.pred)
+dc.gam.pred.tbl
+
+# RMSE for GAM model
+rmse(cherry.dc.sub$bloom_doy, dc.gam$fitted.values)
+
 
 
 dc.gam4 <- gamm(bloom_doy ~ s(sun) + s(sun.maysep) + s(Tavg), 
@@ -3566,6 +3580,18 @@ futs.data <- data.frame(year=yr.futs, sun.maysep=sw.sunms.fut, TempDiffAbs=TempD
 # projections from sw.r3
 sw.r3.pred <- predict(sw.r3, newdata=futs.data)
 
+fed1 <- anova(sw.r3)
+tail(fed1$`Sum Sq`, n=1)
+fed1$`Mean Sq`
+fed2 <- summary(sw.r3)
+fed2$r.squared
+
+
+SSE <- tail(anova(sw.r3)$`Sum Sq`, n=1)
+R2 <- summary(sw.r3)$r.squared
+
+SST = SSE / (1 - R2)
+
 
 sw.pbd.ts3 <- ts(sw.pbd.ts, frequency=5)
 sw.r3n <- tslm(sw.pbd.ts3 ~ trend + season)
@@ -3599,6 +3625,10 @@ sw.arima$call
 
 # Forecast
 ##############################################################
+# Forecasts from Linear Model sw.r3
+sw.r3.pred.adj <- sw.r3.pred - ((1-(0.25*(1/0.7)))*7 - 0.5)
+sw.pred.lm.tbl <- data.frame(year=yr.f, liestal=sw.r3.pred.adj)
+
 # predictions from SARIMA model
 sw.arima.pred <- as.data.frame(forecast(sw.arima, 
                                         xreg=cbind(sun_ms, tempdif, gdd, t_avg, chill)))[1:11,1]
@@ -3841,7 +3871,7 @@ pp.test(ts.pbd.sw)
 # Use VAR in levels.
 
 zt <- data.frame(kyoto=cherry.ja[cherry.ja$year>=1954, "PBD"],
-                 washingtondc=cherry.dc[cherry.dc$year>=1954, "PBD"],
+                 washingtondc=cherry.dc[cherry.dc$year>=1954, "sPBD"],
                  liestal=cherry.sw[cherry.sw$year>=1954, "PBD"])
 
 cherry.var <- cherry.df[cherry.df$year >= 1954, ] %>% 
@@ -3881,93 +3911,73 @@ VARX(zt=zt, p=1, include.mean=T)
 
 
 
+boxplot(blooms$DC_doy, blooms$liestal_doy,
+        xlab = c("Washington", "Liestal"))
+
+
+for (i in 1:nrow(cherry.df)) {
+  ifelse(is.na(cherry.df$location[i]), 
+         cherry.df$location[i] <- "kyoto", 
+         cherry.df$location[i] <- cherry.df$location[i])
+}
+for (i in 1:nrow(cherry.df)) {
+  ifelse(cherry.df$location[i] == "kyoto", cherry.df$location[i] <- "Kyoto",
+         ifelse(cherry.df$location[i] == "washingtondc", cherry.df$location[i] <- "Washington",
+                ifelse(cherry.df$location[i] == "liestal", cherry.df$location[i] <- "Liestal", u<-2)))
+}
+
+
+cbPalette <- c("#000000", "#E69F00", "#56B4E9")
+ggplot(cherry.df, aes(x=year, y=bloom_doy, group=location)) + 
+  geom_line(aes(color=location), size=.75) + 
+  scale_colour_manual(values=cbPalette) +
+  labs(title="Fig. 1 - Historic Number of Days to Peak Bloom by Location",
+       x="Year", y="Number of days to peak bloom")
+
+cbPalette2 <- c("#009E73", "#E69F00", "#56B4E9")
+ggplot(cherry.df, aes(x=location, y=bloom_doy)) + 
+  geom_boxplot(fill=cbPalette2) + 
+  labs(title="Fig. 2 - Boxplots of Number of Days to Peak Bloom by Location",
+       x="Location", y="Number of days to peak bloom")
+
+summary(cherry.df[cherry.df$location=="Washington", "bloom_doy"])
 
 
 
+# Predictive R-squared
+# @author Thomas Hopper
+# code and methods for computing predicted R-squared are borrowed from: https://rpubs.com/RatherBit/102428
+# and https://tomhopper.me/2014/05/16/can-we-do-better-than-r-squared/
+
+# predicted residual sums of squares (PRESS)
+PRESS <- function(linear.model) {
+  PRESS <- sum( (residuals(linear.model)/(1-lm.influence(linear.model)$hat))^2 )
+  return(PRESS)
+}
+
+# predicted R-squared
+pred_r_squared <- function(linear.model) {
+  TSS <- sum(anova(linear.model)$'Sum Sq')
+  pred.r.squared <- 1-PRESS(linear.model)/(TSS)
+  return(pred.r.squared)
+}
 
 
 
+# Washington, DC
+#################
+pred_r_squared(lm.r2)
+summary(lm.r2)$r.squared
 
+# Liestal
+#############
+pred_r_squared(sw.r3)
+summary(sw.r3)$r.squared
 
-
-
-
-
-
-
-###########################################################################################
-
-
-
-# create time series
-ts.pbd.ja <- ts(cherry.df.s[cherry.df.s$location=="kyoto", "PBD"])
-ts.pbd.dc <- ts(cherry.df.s[cherry.df.s$location=="washingtondc", "PBD"])
-ts.pbd.sw <- ts(cherry.df.s[cherry.df.s$location=="liestal", "PBD"])
-
-ts.prcp.ja <- ts(cherry.df.s[cherry.df.s$location=="kyoto", "prcp.m"])
-ts.prcp.dc <- ts(cherry.df.s[cherry.df.s$location=="washingtondc", "prcp.m"])
-ts.prcp.sw <- ts(cherry.df.s[cherry.df.s$location=="liestal", "prcp.m"])
-
-ts.tavg.ja <- ts(cherry.df.s[cherry.df.s$location=="kyoto", "tavg.m"])
-ts.tavg.dc <- ts(cherry.df.s[cherry.df.s$location=="washingtondc", "tavg.m"])
-ts.tavg.sw <- ts(cherry.df.s[cherry.df.s$location=="liestal", "tavg.m"])
-
-ts.sun.ja <- ts(cherry.df.s[cherry.df.s$location=="kyoto", "sun"])
-ts.sun.dc <- ts(cherry.df.s[cherry.df.s$location=="washingtondc", "sun"])
-ts.sun.dc <- ts(cherry.df.s[cherry.df.s$location=="liestal", "sun"])
-
-
-
-all.lm1 <- lm(PBD ~ Tavg + GDD + hardiness.zone, data=cherry.df)
-summary(all.lm1)
-
-all.lm2 <- lm(PBD ~ Tavg + GDD + hardiness.zone + sun.maysep, data=cherry.df)
-summary(all.lm2)
-
-all.lm3 <- lm(PBD ~ Tavg + GDD + hardiness.zone + sun.maysep + chill.days, data=cherry.df)
-summary(all.lm3)
-
-AIC(all.lm, all.lm1, all.lm2)
-# all.lm2 has the lowest AIC and has a higher R-squared than all.lm3
-# all.lm3 has fewer observations.
-# Thus, all.lm2 is our provisional linear model
-
-
-
-
-
-
-
-
-
-
-acf2(resid(all.lm))
-vif(all.lm)
-plot(all.lm)
-
-
-
-
-
-
-
-var.df <- cherry.df.s[,c("Tavg", "sun", "sun.maysep")]
-y.df <- data.frame(JA = c(ts.pbd.ja), DC = c(ts.pbd.dc), SW = c(ts.pbd.sw))
-
-
-all.var <- ar(cbind(ts.pbd.ja, ts.pbd.dc, ts.pbd.sw))
-all.var$ar
-acf(all.var$resid[-1,])
-
-#VARselect(, lag.max = 1,
-#type = “const”, exogen = cbind())
-
-all.var2 <- VAR(cbind(ts.pbd.ja, ts.pbd.dc, ts.pbd.sw), p=1 )
-coef(all.var2)
-predict(all.var2, n.ahead=10)
-
-
-
+# Vancouver
+##############
+pred_r_squared(all.lm)
+summary(all.lm)$r.squared
 
 
 
